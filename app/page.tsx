@@ -32,17 +32,14 @@ export default function Home() {
               </div>
             </div>
             <div className="relative">
-              <div className="aspect-video bg-white border-3 border-black shadow-brutal-lg overflow-hidden relative">
-                <div className="absolute inset-0 bg-gray-200 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="w-16 h-16 border-3 border-black rounded-full bg-accent mx-auto mb-2 flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                    </div>
-                    <p className="font-bold">产品演示视频</p>
-                  </div>
+              <div className="aspect-video bg-white border-3 border-black shadow-brutal-lg overflow-hidden">
+                <img 
+                  src="/hero.png" 
+                  alt="Video2PPT功能展示" 
+                  className="w-full h-full object-cover"
+                />
+                <div className="absolute top-4 right-4 bg-accent text-light px-3 py-1 border-3 border-black transform rotate-3">
+                  高效转换
                 </div>
               </div>
               <div className="absolute -bottom-6 -right-6 bg-secondary border-3 border-black p-4 shadow-brutal transform rotate-3">
