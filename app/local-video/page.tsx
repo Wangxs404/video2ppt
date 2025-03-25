@@ -2,9 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-// 注意：客户端需要安装和导入pptxgenjs库
-// yarn add pptxgenjs
-import pptxgen from 'pptxgenjs'
+// 导入抽离的工具函数
+import { calculateImageDifference, extractFramesFromVideo, setupVideoCanvas } from '../utils/videoProcessing'
+import { createAndDownloadPPT } from '../utils/pptGeneration'
+import { isVideoFile, createFileObjectURL, revokeFileObjectURL, formatFileSize } from '../utils/fileHandling'
 
 export default function LocalVideoPage() {
   const [dragActive, setDragActive] = useState<boolean>(false)
@@ -38,7 +39,7 @@ export default function LocalVideoPage() {
     
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const file = e.dataTransfer.files[0]
-      if (file.type.startsWith('video/')) {
+      if (isVideoFile(file)) {
         handleVideoSelect(file)
       }
     }
@@ -57,10 +58,10 @@ export default function LocalVideoPage() {
     
     // 释放之前的URL
     if (videoUrl) {
-      URL.revokeObjectURL(videoUrl)
+      revokeFileObjectURL(videoUrl)
     }
     
-    const newVideoUrl = URL.createObjectURL(file)
+    const newVideoUrl = createFileObjectURL(file)
     setVideoUrl(newVideoUrl)
     
     // 清除之前的截图
@@ -73,36 +74,12 @@ export default function LocalVideoPage() {
   const handleClearFile = () => {
     setSelectedFile(null)
     if (videoUrl) {
-      URL.revokeObjectURL(videoUrl)
+      revokeFileObjectURL(videoUrl)
       setVideoUrl('')
     }
     setScreenshots([])
     setPreviewScreenshots([])
     setExtractionProgress(0)
-  }
-
-  // 计算图像差异
-  const calculateImageDifference = (imgData1: ImageData, imgData2: ImageData) => {
-    let sumOfSquares = 0
-    const length = imgData1.data.length
-
-    for (let i = 0; i < length; i += 4) {
-      const r1 = imgData1.data[i]
-      const g1 = imgData1.data[i + 1]
-      const b1 = imgData1.data[i + 2]
-      const luminance1 = 0.2126 * r1 + 0.7152 * g1 + 0.0722 * b1
-
-      const r2 = imgData2.data[i]
-      const g2 = imgData2.data[i + 1]
-      const b2 = imgData2.data[i + 2]
-      const luminance2 = 0.2126 * r2 + 0.7152 * g2 + 0.0722 * b2
-
-      const diff = luminance1 - luminance2
-      sumOfSquares += diff * diff
-    }
-
-    const avgSquareDiff = sumOfSquares / (length / 4)
-    return Math.sqrt(avgSquareDiff)
   }
   
   // 开始提取PPT
@@ -110,102 +87,45 @@ export default function LocalVideoPage() {
     if (!videoRef.current || !canvasRef.current || !selectedFile) return
     
     setIsExtracting(true)
-    const video = videoRef.current
-    const canvas = canvasRef.current
-    const context = canvas.getContext('2d')
     
-    if (!context) {
-      setIsExtracting(false)
-      return
+    const options = {
+      captureInterval: 3, // 捕获间隔（秒）
+      differenceThreshold: 30, // 差异阈值
+      maxScreenshots: 256 // 最大截图数
     }
     
-    // 设置画布尺寸与视频相同
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-    
-    const captureInterval = 3 // 捕获间隔（秒）
-    const differenceThreshold = 30 // 差异阈值
-    const maxScreenshots = 256 // 最大截图数
-    
-    let currentTime = 0
-    const totalDuration = video.duration
-    let previousImageData: ImageData | null = null
-    const newScreenshots: Blob[] = []
-    const newPreviewUrls: string[] = []
-    let noNewScreenshotCount = 0
-    
-    const captureFrame = () => {
-      return new Promise<void>((resolve) => {
-        video.currentTime = currentTime
+    const callbacks = {
+      onProgress: (progress: number) => {
+        setExtractionProgress(progress)
+      },
+      onFrameCaptured: (blob: Blob, url: string) => {
+        // 更新预览，保持最多显示5张
+        setPreviewScreenshots(prevUrls => {
+          const updatedUrls = [...prevUrls, url].slice(-5)
+          return updatedUrls
+        })
         
-        video.onseeked = () => {
-          context.drawImage(video, 0, 0, canvas.width, canvas.height)
-          const currentImageData = context.getImageData(0, 0, canvas.width, canvas.height)
-          
-          if (previousImageData) {
-            const difference = calculateImageDifference(previousImageData, currentImageData)
-            
-            if (difference > differenceThreshold) {
-              canvas.toBlob((blob) => {
-                if (blob) {
-                  newScreenshots.push(blob)
-                  
-                  const url = URL.createObjectURL(blob)
-                  newPreviewUrls.push(url)
-                  
-                  // 更新预览，保持最多显示5张
-                  setPreviewScreenshots(prevUrls => {
-                    const updatedUrls = [...prevUrls, url].slice(-5)
-                    return updatedUrls
-                  })
-                }
-                noNewScreenshotCount = 0
-                resolve()
-              }, 'image/jpeg', 0.95)
-            } else {
-              noNewScreenshotCount++
-              resolve()
-            }
-          } else {
-            canvas.toBlob((blob) => {
-              if (blob) {
-                newScreenshots.push(blob)
-                
-                const url = URL.createObjectURL(blob)
-                newPreviewUrls.push(url)
-                
-                setPreviewScreenshots(prevUrls => [url])
-              }
-              resolve()
-            }, 'image/jpeg', 0.95)
-          }
-          
-          previousImageData = currentImageData
-        }
-      })
-    }
-    
-    const processVideo = async () => {
-      while (currentTime <= totalDuration && noNewScreenshotCount < 10) {
-        await captureFrame()
-        currentTime += captureInterval
-        setExtractionProgress(Math.min((currentTime / totalDuration) * 100, 100))
-        
-        if (newScreenshots.length >= maxScreenshots) {
-          break
-        }
+        // 同时更新screenshots状态，使PPT数量动态更新
+        setScreenshots(prev => [...prev, blob])
+      },
+      onComplete: (newScreenshots: Blob[]) => {
+        // 由于我们已经在每帧更新了screenshots，这里不需要再设置
+        // 只需标记提取过程已完成
+        setIsExtracting(false)
       }
-      
-      setScreenshots(newScreenshots)
-      setIsExtracting(false)
     }
     
-    // 播放视频一段时间确保元数据已加载
-    video.play()
-    setTimeout(() => {
-      video.pause()
-      processVideo()
-    }, 500)
+    try {
+      await extractFramesFromVideo(
+        videoRef.current,
+        canvasRef.current,
+        options,
+        callbacks
+      )
+    } catch (error) {
+      console.error('提取帧错误:', error)
+      setIsExtracting(false)
+    }
   }
   
   // 创建并下载PPT
@@ -215,42 +135,7 @@ export default function LocalVideoPage() {
     setIsProcessing(true)
     
     try {
-      const pptx = new pptxgen()
-      
-      // 选择要添加到PPT的截图
-      const screenshotsToUse = screenshots.length <= 256 
-        ? screenshots 
-        : screenshots.slice(0, 256) // 取前256张
-      
-      // 为每张截图创建幻灯片
-      for (let i = 0; i < screenshotsToUse.length; i++) {
-        const slide = pptx.addSlide()
-        
-        // 将截图转换为base64
-        const base64 = await new Promise<string>((resolve) => {
-          const reader = new FileReader()
-          reader.onloadend = () => resolve(reader.result as string)
-          reader.readAsDataURL(screenshotsToUse[i])
-        })
-        
-        // 添加图片到幻灯片
-        slide.addImage({
-          data: base64,
-          x: 0,
-          y: 0,
-          w: '100%',
-          h: '100%'
-        })
-      }
-      
-      // 生成时间戳文件名
-      const now = new Date()
-      const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`
-      const fileName = `Video2PPT_${timestamp}.pptx`
-      
-      // 写入并下载文件
-      await pptx.writeFile({ fileName })
-      
+      await createAndDownloadPPT(screenshots)
     } catch (error) {
       console.error('PPT生成错误:', error)
     } finally {
@@ -262,11 +147,11 @@ export default function LocalVideoPage() {
   useEffect(() => {
     return () => {
       // 释放截图URL
-      previewScreenshots.forEach(url => URL.revokeObjectURL(url))
+      previewScreenshots.forEach(url => revokeFileObjectURL(url))
       
       // 释放视频URL
       if (videoUrl) {
-        URL.revokeObjectURL(videoUrl)
+        revokeFileObjectURL(videoUrl)
       }
     }
   }, [previewScreenshots, videoUrl])
@@ -296,7 +181,7 @@ export default function LocalVideoPage() {
                 <div className="bg-primary text-light inline-block px-4 py-2 border-3 border-black">
                   已选择视频文件: {selectedFile.name}
                 </div>
-                <p>文件大小: {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</p>
+                <p>文件大小: {formatFileSize(selectedFile.size)}</p>
                 <button 
                   onClick={handleClearFile}
                   className="btn bg-accent text-light mt-4"
@@ -380,7 +265,12 @@ export default function LocalVideoPage() {
                   />
                 ))}
               </div>
-              <p className="text-sm text-center mt-2">共提取 {screenshots.length} 张幻灯片</p>
+              <p className="text-sm text-center mt-2">
+                {isExtracting 
+                  ? `正在提取幻灯片，已获取 ${screenshots.length} 张` 
+                  : `共提取 ${screenshots.length} 张幻灯片`
+                }
+              </p>
             </div>
           )}
           
