@@ -1,0 +1,42 @@
+<svg width="800" height="600" viewBox="0 0 800 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景 -->
+  <rect width="800" height="600" fill="#F9F9F9"/>
+  
+  <!-- 视频播放器框架 -->
+  <rect x="100" y="100" width="600" height="400" rx="8" fill="#F2F2F2" stroke="#000000" stroke-width="4"/>
+  
+  <!-- 视频进度条 -->
+  <rect x="120" y="450" width="560" height="10" rx="5" fill="#E0E0E0" stroke="#000000" stroke-width="2"/>
+  <rect x="120" y="450" width="200" height="10" rx="5" fill="#4361EE" stroke="#000000" stroke-width="2"/>
+  
+  <!-- 幻灯片内容 -->
+  <rect x="150" y="150" width="500" height="280" rx="4" fill="white" stroke="#000000" stroke-width="3"/>
+  
+  <!-- 幻灯片标题 -->
+  <rect x="180" y="180" width="300" height="40" rx="4" fill="#FFBE0B" stroke="#000000" stroke-width="2"/>
+  <rect x="180" y="240" width="440" height="20" rx="4" fill="#E0E0E0" stroke="#000000" stroke-width="2"/>
+  <rect x="180" y="270" width="440" height="20" rx="4" fill="#E0E0E0" stroke="#000000" stroke-width="2"/>
+  <rect x="180" y="300" width="440" height="20" rx="4" fill="#E0E0E0" stroke="#000000" stroke-width="2"/>
+  
+  <!-- PPT图标 -->
+  <rect x="500" y="350" width="80" height="80" rx="8" fill="#FF5F5D" stroke="#000000" stroke-width="3"/>
+  <text x="515" y="395" font-family="Arial" font-weight="bold" font-size="20" fill="white">PPT</text>
+  
+  <!-- 箭头指示从视频到PPT的转换 -->
+  <path d="M440 380 L 490 380" stroke="#000000" stroke-width="3"/>
+  <path d="M490 380 L 475 375 L 475 385 Z" fill="#000000"/>
+  
+  <!-- 视频图标 -->
+  <rect x="340" y="350" width="80" height="80" rx="8" fill="#4361EE" stroke="#000000" stroke-width="3"/>
+  <polygon points="365,375 365,405 395,390" fill="white" stroke="#000000" stroke-width="2"/>
+  
+  <!-- 卡通角色 -->
+  <circle cx="180" y="380" r="40" fill="#9B5DE5" stroke="#000000" stroke-width="3"/> <!-- 头 -->
+  <circle cx="170" y="370" r="5" fill="white" stroke="#000000" stroke-width="1"/> <!-- 左眼 -->
+  <circle cx="190" y="370" r="5" fill="white" stroke="#000000" stroke-width="1"/> <!-- 右眼 -->
+  <path d="M175 390 Q 180 395 185 390" stroke="#000000" stroke-width="2" fill="none"/> <!-- 笑容 -->
+  
+  <!-- 角色的想法气泡 -->
+  <path d="M230 355 Q 250 330 270 340 Q 290 320 260 300 Q 230 270 200 300 Q 180 320 200 340 Q 220 330 230 355 Z" fill="#FF2CC4" stroke="#000000" stroke-width="2"/>
+  <text x="215" y="320" font-family="Arial" font-weight="bold" font-size="18" fill="white">Idea!</text>
+</svg> 
