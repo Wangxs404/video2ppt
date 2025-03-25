@@ -2,8 +2,15 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { calculateImageDifference } from '../utils/videoProcessing'
+import { calculateImageDifference, captureAndFilterScreenshot, updateCanvasWithScreenshot } from '../utils/videoProcessing'
 import { createAndDownloadPPT } from '../utils/pptGeneration'
+import { formatTime, startRecording } from '../utils/screenRecording'
+import { 
+  navigateToPreviousScreenshot, 
+  navigateToNextScreenshot, 
+  navigateToLatestScreenshot,
+  resetScreenshotNavigation
+} from '../utils/screenshotNavigation'
 
 export default function ScreenRecordingPage() {
   // 录制状态
@@ -39,13 +46,6 @@ export default function ScreenRecordingPage() {
   const lastScreenshotTimeRef = useRef<number>(0)
   const lastImageDataRef = useRef<ImageData | null>(null)
   const diffThreshold = 30 // 图像差异阈值
-  
-  // 格式化录制时间
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60)
-    const secs = seconds % 60
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
-  }
 
   // 切换音频选项
   const handleToggleAudio = () => {
@@ -61,6 +61,37 @@ export default function ScreenRecordingPage() {
       ...recordingOptions,
       captureArea: area,
     })
+  }
+
+  // 截图函数
+  const captureScreenshot = () => {
+    captureAndFilterScreenshot({
+      videoRef,
+      canvasRef,
+      lastImageDataRef,
+      diffThreshold,
+      onScreenshotCaptured: (screenshot) => {
+        setScreenshots(prev => [...prev, screenshot])
+        setCurrentScreenshotIndex(prev => prev + 1)
+        setScreenshotStats(prev => ({ ...prev, saved: prev.saved + 1 }))
+      },
+      onStatsUpdate: () => {
+        setScreenshotStats(prev => ({ ...prev, total: prev.total + 1 }))
+      }
+    })
+  }
+
+  // 处理截图导航
+  const handlePreviousScreenshot = () => {
+    navigateToPreviousScreenshot(currentScreenshotIndex, setCurrentScreenshotIndex)
+  }
+
+  const handleNextScreenshot = () => {
+    navigateToNextScreenshot(currentScreenshotIndex, screenshots.length - 1, setCurrentScreenshotIndex)
+  }
+
+  const handleLatestScreenshot = () => {
+    navigateToLatestScreenshot(screenshots.length - 1, setCurrentScreenshotIndex)
   }
 
   // 开始录制准备
@@ -102,171 +133,37 @@ export default function ScreenRecordingPage() {
       }
       
       // 重置截图数组、索引和最后一帧图像数据
-      setScreenshots([])
-      setCurrentScreenshotIndex(-1)
-      setScreenshotStats({ total: 0, saved: 0 })
-      lastImageDataRef.current = null
+      resetScreenshotNavigation({
+        setScreenshots,
+        setCurrentIndex: setCurrentScreenshotIndex,
+        setStats: setScreenshotStats,
+        lastImageDataRef
+      })
       lastScreenshotTimeRef.current = Date.now()
       
       // 获取到媒体流后，直接开始录制而不是进入ready状态
-      startRecording(stream)
+      handleStartRecording(stream)
     } catch (err) {
       console.error('无法获取屏幕共享权限:', err)
       alert('屏幕录制需要您的授权，请允许屏幕共享')
     }
   }
 
-  // 截图函数
-  const captureScreenshot = () => {
-    if (!videoRef.current || !canvasRef.current) return
-    
-    const video = videoRef.current
-    const canvas = canvasRef.current
-    const context = canvas.getContext('2d')
-    
-    if (!context) return
-    
-    // 设置画布尺寸与视频相同
-    canvas.width = video.videoWidth
-    canvas.height = video.videoHeight
-    
-    // 绘制当前视频帧到画布
-    context.drawImage(video, 0, 0, canvas.width, canvas.height)
-    
-    // 更新总截图计数
-    setScreenshotStats(prev => ({ ...prev, total: prev.total + 1 }))
-    
-    // 获取当前帧的图像数据
-    const currentImageData = context.getImageData(0, 0, canvas.width, canvas.height)
-    
-    // 检查是否需要保存这一帧（如果是第一帧或者与上一帧差异较大）
-    let shouldSave = false
-    let difference = 0
-    
-    if (!lastImageDataRef.current) {
-      // 第一帧总是保存
-      shouldSave = true
-    } else {
-      // 计算与上一帧的差异
-      difference = calculateImageDifference(lastImageDataRef.current, currentImageData)
-      console.log(`图像差异度: ${difference.toFixed(2)}`)
-      
-      // 差异大于阈值才保存
-      shouldSave = difference > diffThreshold
-    }
-    
-    // 更新最后一帧的图像数据，无论是否保存
-    lastImageDataRef.current = currentImageData
-    
-    if (shouldSave) {
-      // 将画布内容转换为base64图片
-      const screenshot = canvas.toDataURL('image/jpeg', 0.8)
-      
-      // 更新截图数组
-      setScreenshots(prev => [...prev, screenshot])
-      // 自动切换到最新截图
-      setCurrentScreenshotIndex(prev => prev + 1)
-      // 更新保存的截图计数
-      setScreenshotStats(prev => ({ ...prev, saved: prev.saved + 1 }))
-      
-      console.log('保存新截图')
-    } else {
-      console.log(`跳过相似截图 (差异度: ${difference.toFixed(2)}，小于阈值: ${diffThreshold})`)
-    }
-  }
-
-  // 处理截图导航
-  const handlePreviousScreenshot = () => {
-    if (currentScreenshotIndex > 0) {
-      setCurrentScreenshotIndex(prev => prev - 1)
-    }
-  }
-
-  const handleNextScreenshot = () => {
-    if (currentScreenshotIndex < screenshots.length - 1) {
-      setCurrentScreenshotIndex(prev => prev + 1)
-    }
-  }
-
-  const handleLatestScreenshot = () => {
-    setCurrentScreenshotIndex(screenshots.length - 1)
-  }
-
   // 提取开始录制逻辑为单独函数
-  const startRecording = (stream: MediaStream) => {
-    // 重置状态
-    recordedChunksRef.current = []
-    setRecordingTime(0)
-    totalRecordedTimeRef.current = 0
-    recordingStartTimeRef.current = Date.now()
-    lastUpdateTimeRef.current = Date.now()
-    isPausedRef.current = false
-    
-    // 设置录制选项
-    const options = { 
-      mimeType: 'video/webm;codecs=vp9',
-      videoBitsPerSecond: 3000000 // 3Mbps
-    }
-    
-    try {
-      const mediaRecorder = new MediaRecorder(stream, options)
-      mediaRecorderRef.current = mediaRecorder
-      
-      // 录制事件处理
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          recordedChunksRef.current.push(event.data)
-        }
-      }
-      
-      mediaRecorder.onstop = () => {
-        finishRecording()
-      }
-      
-      // 开始录制
-      mediaRecorder.start(1000)
-      
-      // 使用 requestAnimationFrame 替代 setInterval 提高精度
-      const updateTimer = () => {
-        if (!isPausedRef.current) {
-          const currentTime = Date.now()
-          
-          // 检查是否需要截图（每3秒）
-          if (currentTime - lastScreenshotTimeRef.current >= 3000) {
-            captureScreenshot()
-            lastScreenshotTimeRef.current = currentTime
-          }
-          
-          // 只有当超过50ms才更新，减少不必要的状态更新
-          if (currentTime - lastUpdateTimeRef.current >= 50) {
-            const elapsedSinceStart = (currentTime - recordingStartTimeRef.current) / 1000
-            const totalTime = Math.floor(totalRecordedTimeRef.current + elapsedSinceStart)
-            setRecordingTime(totalTime)
-            lastUpdateTimeRef.current = currentTime
-          }
-        }
-        
-        // 只有在录制或暂停状态下继续更新
-        if (mediaRecorderRef.current && 
-            (mediaRecorderRef.current.state === 'recording' || mediaRecorderRef.current.state === 'paused')) {
-          requestAnimationFrame(updateTimer)
-        }
-      }
-      
-      // 启动基于帧动画的计时器
-      requestAnimationFrame(updateTimer)
-      
-      setRecordingState('recording')
-    } catch (err) {
-      console.error('录制初始化失败:', err)
-      alert('录制失败，请尝试不同的设置或浏览器')
-    }
-  }
-
-  // 保留原函数但不再直接使用它，而是通过startRecording间接调用
-  const handleStartRecording = () => {
-    if (!mediaStream) return
-    startRecording(mediaStream)
+  const handleStartRecording = (stream: MediaStream) => {
+    startRecording(stream, {
+      mediaRecorderRef,
+      recordedChunksRef,
+      setRecordingTime,
+      totalRecordedTimeRef,
+      recordingStartTimeRef,
+      lastUpdateTimeRef,
+      isPausedRef,
+      lastScreenshotTimeRef,
+      captureScreenshot,
+      onRecordingStateChange: setRecordingState,
+      onError: (error) => alert(error.message)
+    })
   }
 
   // 暂停/恢复录制
@@ -401,26 +298,20 @@ export default function ScreenRecordingPage() {
 
   // 更新画布显示
   useEffect(() => {
-    if (!canvasRef.current) return
-    
-    const canvas = canvasRef.current
-    const context = canvas.getContext('2d')
-    
-    if (!context) return
-    
     if (currentScreenshotIndex >= 0 && currentScreenshotIndex < screenshots.length) {
-      const img = new Image()
-      img.src = screenshots[currentScreenshotIndex]
-      img.onload = () => {
-        // 设置画布尺寸与图片相同
-        canvas.width = img.width
-        canvas.height = img.height
-        
-        // 绘制图片到画布
-        context.drawImage(img, 0, 0)
-      }
+      updateCanvasWithScreenshot({
+        canvasRef,
+        screenshotUrl: screenshots[currentScreenshotIndex]
+      })
     }
   }, [currentScreenshotIndex, screenshots])
+
+  // 设置finishRecording为mediaRecorder的onstop回调
+  useEffect(() => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.onstop = finishRecording
+    }
+  }, [mediaRecorderRef.current])
 
   return (
     <main className="container mx-auto px-4 py-10">
@@ -594,11 +485,11 @@ export default function ScreenRecordingPage() {
                 </div>
               )}
               
-              {screenshots.length > 0 && (
+              {/* {screenshots.length > 0 && (
                 <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 px-3 py-1 text-white font-bold rounded-md">
                   第 {currentScreenshotIndex + 1} / {screenshots.length} 页
                 </div>
-              )}
+              )} */}
             </div>
             
             {/* PPT控制选项 */}
@@ -613,11 +504,11 @@ export default function ScreenRecordingPage() {
                   <div className="w-11 h-6 bg-gray-200 border-3 border-black peer-focus:outline-none peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[0px] after:left-[0px] after:bg-white after:border-3 after:border-black after:h-5 after:w-5 after:transition-all peer-checked:bg-accent relative"></div>
                   <span className="ml-3 font-bold">自动提取</span>
                 </label>
-                {recordingState !== 'idle' && (
+                {/* {recordingState !== 'idle' && (
                   <div className="text-sm font-medium">
                     过滤统计: 保存了 {screenshotStats.saved}/{screenshotStats.total} 张截图
                   </div>
-                )}
+                )} */}
               </div>
               
               <div className="font-bold">
