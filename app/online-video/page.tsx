@@ -17,6 +17,14 @@ export default function OnlineVideoPage() {
     { name: 'Bilibili', icon: '📺', color: 'bg-blue-400' },
     { name: 'Coming Soon...', icon: '🎥', color: 'bg-teal-500' },
   ]
+  
+  // 推荐的下载工具
+  const downloadTools = [
+    { name: 'VGO', url: 'https://vgo.pub/', desc: '简洁易用的在线下载器' },
+    { name: 'yt-dlp', url: 'https://github.com/yt-dlp/yt-dlp', desc: '强大的命令行下载工具' },
+    { name: 'Cobalt', url: 'https://cobalt.tools/', desc: '高质量视频下载API服务' },
+    { name: '小纸条', url: 'https://downloader.caorushizi.cn/', desc: '简体中文界面的视频下载器' }
+  ]
 
   // 从YouTube URL中提取视频ID
   const extractYouTubeVideoId = (url: string): string | null => {
@@ -61,7 +69,7 @@ export default function OnlineVideoPage() {
     }
   }
 
-  // 模拟提交
+  // 模拟提交 - 这里我们只做验证，不再嵌入iframe
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (isUrlValid) {
@@ -117,9 +125,9 @@ export default function OnlineVideoPage() {
           <span className="text-2xl ml-3">转PPT</span>
         </h1>
 
-        <div className="card bg-light mb-8">
+        {/* <div className="card bg-light mb-8">
           <h2 className="text-2xl font-bold mb-4">输入视频链接</h2>
-          <p className="mb-6">支持YouTube、Bilibili等主流视频平台，输入视频网址即可开始转换。</p>
+          <p className="mb-6">支持YouTube、Bilibili等主流视频平台，输入视频网址验证有效性。</p>
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
@@ -129,7 +137,7 @@ export default function OnlineVideoPage() {
                 type="text" 
                 value={url}
                 onChange={handleUrlChange}
-                placeholder="https://www.youtube.com/watch?v=... 或 https://www.bilibili.com/video/BV..." 
+                placeholder="https://www.youtube.com/watch?v=..." 
                 className={`brutal-input ${isUrlValid === false ? 'border-red-500' : ''}`}
               />
               {isUrlValid === false && (
@@ -142,60 +150,68 @@ export default function OnlineVideoPage() {
               disabled={!isUrlValid || isProcessing}
               className={`btn bg-accent text-light w-full text-xl py-4 transform hover:rotate-1 ${(!isUrlValid || isProcessing) ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
-              {isProcessing ? '处理中...' : '加载视频'}
+              {isProcessing ? '处理中...' : '验证链接'}
             </button>
           </form>
-        </div>
+        </div> */}
 
-        {/* 视频播放区域 */}
-        <div className="card bg-light mb-8">
-          <h2 className="text-2xl font-bold mb-4">视频预览</h2>
-          <div className="border-3 border-black bg-dark aspect-video mb-6 relative overflow-hidden">
-            {isVideoLoaded && videoId ? (
-              <iframe 
-                src={getVideoEmbedUrl()}
-                className="w-full h-full" 
-                title="Video Player" 
-                frameBorder="0" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                allowFullScreen
-              ></iframe>
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center flex-col text-light">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                </svg>
-                <p className="text-xl font-bold">尚未加载视频</p>
-                <p className="text-gray-400 mt-2">在上方输入YouTube或Bilibili视频链接</p>
-              </div>
-            )}
+        {/* 说明区域 */}
+        <div className="card bg-light mb-8 border-3 border-black">
+          <div className="bg-secondary px-4 py-2 -mt-3 -mx-3 mb-4 border-b-3 border-black inline-block transform rotate-1">
+            <h2 className="text-2xl font-bold">⚠️ 需要下载视频</h2>
           </div>
           
-          {isVideoLoaded && videoId && (
-            <div className="flex flex-wrap gap-4">
-              <button 
-                onClick={() => alert('此功能尚未实现')}
-                className="btn bg-primary text-light flex-1"
-              >
-                分析视频
-              </button>
-              <button 
-                onClick={() => alert('此功能尚未实现')}
-                className="btn bg-accent text-light flex-1"
-              >
-                生成PPT
-              </button>
-            </div>
-          )}
+          <div className="p-3 bg-white border-3 border-black mb-4">
+            <p className="font-bold mb-2">由于视频平台的内容保护机制，我们无法直接从嵌入式播放器中提取帧画面。</p>
+            <p>要创建视频PPT，请按照以下步骤操作：</p>
+            
+            <ol className="list-decimal ml-6 my-4 space-y-2">
+              <li><span className="font-bold">下载视频</span> - 使用下方推荐的工具下载您的视频</li>
+              <li><span className="font-bold">保存到设备</span> - 将视频文件保存到您的计算机</li>
+              <li><span className="font-bold">使用本地视频功能</span> - 上传已下载的视频以生成PPT</li>
+            </ol>
+          </div>
           
-          {isVideoLoaded && videoSource && (
-            <div className="mt-4 text-center text-sm text-gray-600">
-              当前加载: <strong>{videoSource === 'youtube' ? 'YouTube' : 'Bilibili'}</strong> 视频
-            </div>
-          )}
+          <Link 
+            href="/local-video" 
+            className="btn bg-primary text-light w-full text-xl py-4 mb-4"
+          >
+            前往本地视频转换
+          </Link>
         </div>
 
+        {/* 推荐下载工具 */}
         <div className="card bg-light mb-8">
+          <h2 className="text-2xl font-bold mb-4">推荐的视频下载工具</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {downloadTools.map((tool, index) => (
+              <a 
+                key={index}
+                href={tool.url}
+                target="_blank"
+                rel="noopener noreferrer" 
+                className="border-3 border-black p-4 bg-white shadow-brutal transform hover:-rotate-1 hover:shadow-brutal-lg transition-all hover:bg-accent hover:text-light"
+              >
+                <div className="flex items-center mb-2">
+                  <div className="bg-accent text-light w-10 h-10 flex items-center justify-center text-xl border-3 border-black mr-3">
+                    {index + 1}
+                  </div>
+                  <h3 className="font-bold text-lg">{tool.name}</h3>
+                </div>
+                <p>{tool.desc}</p>
+              </a>
+            ))}
+          </div>
+          
+          <div className="mt-4 p-3 bg-gray-100 border-3 border-black">
+            <p className="text-sm text-gray-700">
+              <strong>注意：</strong> 请确保您在下载和使用视频时遵守相关版权法规。仅将视频用于个人学习和非商业用途。本工具不存储或提供任何视频内容。
+            </p>
+          </div>
+        </div>
+
+        {/* 支持的视频平台 */}
+        {/* <div className="card bg-light mb-8">
           <h2 className="text-2xl font-bold mb-4">支持的视频平台</h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {supportedPlatforms.map((platform, index) => (
@@ -210,29 +226,7 @@ export default function OnlineVideoPage() {
               </div>
             ))}
           </div>
-        </div>
-
-        <div className="card bg-light">
-          <h2 className="text-2xl font-bold mb-4">在线视频转PPT的优势</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-start">
-              <div className="bg-primary text-light w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
-              <p><strong>无需下载视频</strong> - 直接处理在线视频内容，节省空间和时间</p>
-            </div>
-            <div className="flex items-start">
-              <div className="bg-secondary w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
-              <p><strong>支持多平台</strong> - 覆盖国内外主流视频网站，满足不同需求</p>
-            </div>
-            <div className="flex items-start">
-              <div className="bg-accent text-light w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
-              <p><strong>快速分享</strong> - 直接分享链接即可帮助他人也获取相同PPT</p>
-            </div>
-            <div className="flex items-start">
-              <div className="bg-primary text-light w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
-              <p><strong>智能提取</strong> - 自动分析关键帧和内容，生成高质量幻灯片</p>
-            </div>
-          </div>
-        </div>
+        </div> */}
       </div>
     </main>
   )

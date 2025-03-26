@@ -160,7 +160,7 @@ export default function LocalVideoPage() {
     <main className="container mx-auto px-4 py-10">
       <div className="max-w-3xl mx-auto">
         <h1 className="text-4xl font-black mb-8">
-          <span className="bg-secondary px-3 py-1 border-3 border-black inline-block transform rotate-1">本地视频</span>
+          <span className="bg-accent text-light px-3 py-1 border-3 border-black inline-block transform rotate-1">本地视频</span>
           <span className="text-2xl ml-3">转PPT</span>
         </h1>
 
