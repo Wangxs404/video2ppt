@@ -220,7 +220,7 @@ export default function Home() {
             </div>
             <div className="flex items-center space-x-4">
               <a 
-                href="https://github.com/Wangxs404/video2ppt-2025" 
+                href="https://github.com/Wangxs404/video2ppt" 
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="border-3 border-black p-2 bg-primary text-light shadow-brutal transform hover:-rotate-3 hover:shadow-brutal-lg transition-all"
