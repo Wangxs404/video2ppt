@@ -20,7 +20,7 @@ export default function Home() {
                 将<span className="bg-secondary px-2 border-3 border-black">任意视频</span>智能转换为精美PPT
               </h2>
               <p className="text-lg mb-8">
-                无论是本地视频、在线课程还是实时录屏，Video2PPT都能快速提取关键内容，生成专业幻灯片。适合会议记录、学习笔记、课程总结等多种场景。
+                无论是本地视频、在线课程还是实时录屏，Video2PPT都能快速提取关键内容，生成专业幻灯片。适合会议记录、学习笔记、课程总结等多种场景。<a href="https://github.com/Wangxs404/video2ppt" target="_blank" rel="noopener noreferrer"><br/>100%开源 https://github.com/Wangxs404/video2ppt</a>
               </p>
               <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
                 <Link href="/local-video" className="btn bg-primary text-light text-center">

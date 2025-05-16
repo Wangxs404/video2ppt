@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { calculateImageDifference, captureAndFilterScreenshot, updateCanvasWithScreenshot } from '../utils/videoProcessing'
+import { calculateImageDifference, captureAndFilterScreenshot, updateCanvasWithScreenshot, convertWebmToMp4 } from '../utils/videoProcessing'
 import { createAndDownloadPPT } from '../utils/pptGeneration'
 import { formatTime, startRecording } from '../utils/screenRecording'
 import { 
@@ -14,7 +14,7 @@ import {
 
 export default function ScreenRecordingPage() {
   // 录制状态
-  const [recordingState, setRecordingState] = useState<'idle' | 'ready' | 'recording' | 'paused' | 'processing'>('idle')
+  const [recordingState, setRecordingState] = useState<'idle' | 'ready' | 'recording' | 'paused' | 'processing' | 'converting'>('idle')
   const [recordingTime, setRecordingTime] = useState<number>(0)
   const [recordingOptions, setRecordingOptions] = useState({
     withAudio: true,
@@ -37,6 +37,9 @@ export default function ScreenRecordingPage() {
   // 视频输出
   const [videoBlob, setVideoBlob] = useState<Blob | null>(null)
   const [videoUrl, setVideoUrl] = useState<string>('')
+  const [mp4Url, setMp4Url] = useState<string>('')
+  const [conversionProgress, setConversionProgress] = useState<number>(0)
+  const [isConverting, setIsConverting] = useState<boolean>(false)
   
   // 截图相关状态
   const [screenshots, setScreenshots] = useState<string[]>([])
@@ -242,8 +245,49 @@ export default function ScreenRecordingPage() {
     setRecordingState('idle')
   }
   
-  // 下载录制的视频
-  const handleDownloadVideo = () => {
+  // 转换视频为MP4格式
+  const handleConvertToMp4 = async () => {
+    if (!videoBlob) return
+    
+    try {
+      setIsConverting(true)
+      setRecordingState('converting')
+      setConversionProgress(0)
+      
+      // 转换为MP4
+      const mp4Blob = await convertWebmToMp4(
+        videoBlob,
+        { quality: 'medium', showLogs: true },
+        { 
+          onProgress: (progress) => {
+            setConversionProgress(Math.floor(progress * 100))
+          }
+        }
+      )
+      
+      // 创建URL并设置
+      const mp4URL = URL.createObjectURL(mp4Blob)
+      setMp4Url(mp4URL)
+      
+      // 下载MP4文件
+      const a = document.createElement('a')
+      a.href = mp4URL
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+      a.download = `screen-recording-${timestamp}.mp4`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    } catch (error) {
+      console.error('转换视频失败:', error)
+      alert('转换为MP4格式失败，请重试或选择WebM格式下载')
+    } finally {
+      setIsConverting(false)
+      setRecordingState('idle')
+    }
+  }
+  
+  // 下载原始WebM视频
+  const handleDownloadWebM = () => {
     if (!videoBlob) return
     
     const a = document.createElement('a')
@@ -293,8 +337,12 @@ export default function ScreenRecordingPage() {
       if (videoUrl) {
         URL.revokeObjectURL(videoUrl)
       }
+      
+      if (mp4Url) {
+        URL.revokeObjectURL(mp4Url)
+      }
     }
-  }, [mediaStream, videoUrl])
+  }, [mediaStream, videoUrl, mp4Url])
 
   // 更新画布显示
   useEffect(() => {
@@ -369,6 +417,24 @@ export default function ScreenRecordingPage() {
                   <span>处理中...</span>
                 </div>
               )}
+              
+              {/* 显示转换进度遮罩 */}
+              {recordingState === 'converting' && (
+                <div className="absolute inset-0 flex items-center justify-center flex-col bg-black bg-opacity-70 text-white">
+                  <svg className="animate-spin h-12 w-12 mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <p className="text-xl font-bold mb-2">正在转换为MP4...</p>
+                  <div className="w-64 h-2 bg-gray-200 rounded-full">
+                    <div 
+                      className="h-full bg-primary rounded-full transition-all duration-200 ease-in-out"
+                      style={{ width: `${conversionProgress}%` }}
+                    ></div>
+                  </div>
+                  <p className="mt-2">{conversionProgress}%</p>
+                </div>
+              )}
             </div>
             
             {/* 录制选项 - 始终显示麦克风设置 */}
@@ -422,38 +488,55 @@ export default function ScreenRecordingPage() {
                 </>
               )}
               
-              {videoUrl && recordingState === 'idle' && (
+              {videoUrl && recordingState === 'idle' && !isConverting && (
                 <>
-                  <button 
-                    onClick={handleDownloadVideo}
-                    className="btn bg-accent text-light flex-1"
-                  >
-                    下载视频
-                  </button>
-                  <button 
-                    onClick={() => {
-                      // 清理并重置
-                      if (videoUrl) {
-                        URL.revokeObjectURL(videoUrl)
-                      }
-                      setVideoBlob(null)
-                      setVideoUrl('')
-                    }}
-                    className="btn bg-light flex-1"
-                  >
-                    重新录制
-                  </button>
+                  <div className="w-full flex flex-col gap-3">
+                    <p className="font-bold text-center mb-1">选择下载格式</p>
+                    <div className="flex flex-row gap-2 w-full">
+                      <button 
+                        onClick={handleDownloadWebM}
+                        className="btn bg-accent text-light w-1/2"
+                      >
+                        下载 WebM (快速)
+                      </button>
+                      <button 
+                        onClick={handleConvertToMp4}
+                        className="btn bg-primary text-light w-1/2"
+                      >
+                        下载 MP4 (高质量)
+                      </button>
+                    </div>
+                    <button 
+                      onClick={() => {
+                        // 清理并重置
+                        if (videoUrl) {
+                          URL.revokeObjectURL(videoUrl)
+                        }
+                        if (mp4Url) {
+                          URL.revokeObjectURL(mp4Url)
+                        }
+                        setVideoBlob(null)
+                        setVideoUrl('')
+                        setMp4Url('')
+                      }}
+                      className="btn bg-light w-full"
+                    >
+                      重新录制
+                    </button>
+                  </div>
                 </>
               )}
               
-              {recordingState === 'processing' && (
+              {(recordingState === 'processing' || recordingState === 'converting') && (
                 <div className="w-full text-center py-4">
                   <div className="inline-flex items-center">
                     <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    <span className="font-bold">处理中，请稍候...</span>
+                    <span className="font-bold">
+                      {recordingState === 'processing' ? '处理中，请稍候...' : '转换为MP4中...'}
+                    </span>
                   </div>
                 </div>
               )}
@@ -572,7 +655,7 @@ export default function ScreenRecordingPage() {
             </div>
             <div className="flex items-start">
               <div className="bg-primary text-light w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
-              <p><strong>视频下载</strong> - 录制完成后可立即下载高质量WebM格式视频</p>
+              <p><strong>多格式下载</strong> - 支持WebM(快速)和MP4(高质量)两种视频格式</p>
             </div>
           </div>
         </div>

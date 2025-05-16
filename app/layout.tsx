@@ -27,7 +27,7 @@ export default function RootLayout({
               <span className="bg-accent text-light px-3 py-1 border-3 border-black">2PPT</span>
             </Link>
             <div className="flex space-x-4">
-            <Link 
+              <Link 
                 href="/screen-recording" 
                 className="font-bold px-3 py-2 border-3 border-black  bg-secondary shadow-brutal transition-transform hover:translate-y-[-2px] hover:shadow-brutal-lg active:translate-y-[2px] active:shadow-none">
                 实时录屏
