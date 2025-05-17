@@ -23,11 +23,8 @@ export default function Home() {
                 无论是本地视频、在线课程还是实时录屏，Video2PPT都能快速提取关键内容，生成专业幻灯片。适合会议记录、学习笔记、课程总结等多种场景。<a href="https://github.com/Wangxs404/video2ppt" target="_blank" rel="noopener noreferrer"><br/>100%开源 https://github.com/Wangxs404/video2ppt</a>
               </p>
               <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
-                <Link href="/local-video" className="btn bg-primary text-light text-center">
+                <Link href="/screen-recording" className="btn bg-primary text-light text-center">
                   立即开始
-                </Link>
-                <Link href="#how-it-works" className="btn bg-light text-center">
-                  了解更多
                 </Link>
               </div>
             </div>
@@ -179,14 +176,15 @@ export default function Home() {
           
           <div className="card bg-light max-w-xl mx-auto p-8 transform hover:rotate-1">
             <div className="space-y-4">
-              <div>
+            <div>
                 <Link 
-                  href="/online-video" 
-                  className="brutal-input block py-3 text-center hover:bg-primary/10 transition-colors"
+                  href="/screen-recording" 
+                  className="btn bg-accent text-light w-full"
                 >
-                  输入视频链接（YouTube, Bilibili等）
+                  开始录屏
                 </Link>
               </div>
+              
               <p className="text-center font-bold">- 或者 -</p>
               <div>
                 <Link 
@@ -199,10 +197,10 @@ export default function Home() {
               <p className="text-center font-bold">- 或者 -</p>
               <div>
                 <Link 
-                  href="/screen-recording" 
-                  className="btn bg-accent text-light w-full"
+                  href="/online-video" 
+                  className="brutal-input block py-3 text-center hover:bg-primary/10 transition-colors"
                 >
-                  开始录屏
+                  输入视频链接（YouTube, Bilibili等）
                 </Link>
               </div>
             </div>

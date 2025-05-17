@@ -100,38 +100,176 @@ export default function ScreenRecordingPage() {
   // 开始录制准备
   const handleStartPrepare = async () => {
     try {
-      // 请求屏幕共享
+      // 请求屏幕共享，确保捕获系统音频
       const displayMediaOptions = {
         video: {
           cursor: "always"
         } as any,
+        // 重新启用系统音频捕获
         audio: recordingOptions.withAudio
       };
       
-      const stream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions)
+      const stream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
+      let finalStream = stream;
       
-      // 直接从获取的媒体流开始录制，无需二次选择
+      console.log('屏幕捕获 - 音频轨道数量:', stream.getAudioTracks().length, '视频轨道数量:', stream.getVideoTracks().length);
+      
+      if (stream.getAudioTracks().length > 0) {
+        stream.getAudioTracks().forEach(track => {
+          console.log('系统音频轨道信息:', {
+            id: track.id,
+            label: track.label,
+            enabled: track.enabled,
+            muted: track.muted
+          });
+        });
+      }
+      
+      // 如果需要麦克风音频，则额外捕获并合并
       if (recordingOptions.withAudio) {
         try {
-          const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true })
-          const tracks = [...stream.getTracks(), ...audioStream.getTracks()]
-          const combinedStream = new MediaStream(tracks)
-          setMediaStream(combinedStream)
+          // 获取麦克风音频 - 明确请求用户麦克风
+          const constraints = {
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true,
+              autoGainControl: true,
+              channelCount: 2,
+              deviceId: undefined // 让用户选择设备
+            }
+          };
           
-          if (videoRef.current) {
-            videoRef.current.srcObject = combinedStream
+          console.log('请求麦克风权限，使用约束:', constraints);
+          const micStream = await navigator.mediaDevices.getUserMedia(constraints);
+          
+          console.log('麦克风捕获 - 音频轨道数量:', micStream.getAudioTracks().length);
+          
+          if (micStream.getAudioTracks().length > 0) {
+            micStream.getAudioTracks().forEach(track => {
+              console.log('麦克风轨道信息:', {
+                id: track.id,
+                label: track.label,
+                enabled: track.enabled,
+                muted: track.muted,
+                readyState: track.readyState
+              });
+              
+              // 确保麦克风轨道被启用
+              track.enabled = true;
+            });
+          }
+          
+          // 提取所有轨道
+          const videoTracks = stream.getVideoTracks();
+          const systemAudioTracks = stream.getAudioTracks(); // 系统音频轨道
+          const micAudioTracks = micStream.getAudioTracks(); // 麦克风音频轨道
+          
+          if (micAudioTracks.length > 0) {
+            try {
+              // 使用Web Audio API混合音频
+              const audioContext = new AudioContext();
+              
+              // 创建新的目标节点
+              const destination = audioContext.createMediaStreamDestination();
+              
+              // 处理系统音频
+              if (systemAudioTracks.length > 0) {
+                const systemSource = audioContext.createMediaStreamSource(new MediaStream([systemAudioTracks[0]]));
+                systemSource.connect(destination);
+                console.log('已连接系统音频到混合器');
+              }
+              
+              // 处理麦克风音频 - 增加音量
+              if (micAudioTracks.length > 0) {
+                const micSource = audioContext.createMediaStreamSource(new MediaStream([micAudioTracks[0]]));
+                const micGain = audioContext.createGain();
+                micGain.gain.value = 1.5; // 增加麦克风音量
+                micSource.connect(micGain);
+                micGain.connect(destination);
+                console.log('已连接麦克风音频到混合器，增益值:', micGain.gain.value);
+              }
+              
+              // 创建包含所有轨道的新流（视频 + 混合音频）
+              const mixedAudioTracks = destination.stream.getAudioTracks();
+              console.log('混合后的音轨数量:', mixedAudioTracks.length);
+              
+              if (mixedAudioTracks.length > 0) {
+                const combinedStream = new MediaStream([
+                  ...videoTracks,
+                  ...mixedAudioTracks
+                ]);
+                
+                finalStream = combinedStream;
+                setMediaStream(combinedStream);
+                
+                if (videoRef.current) {
+                  videoRef.current.srcObject = combinedStream;
+                  videoRef.current.muted = true; // 避免回声，不影响录制
+                }
+                
+                console.log('使用Web Audio API混合后的流 - 视频轨道:', videoTracks.length, 
+                            '混合音轨:', mixedAudioTracks.length);
+              } else {
+                // 如果混合失败，则回退到简单合并
+                console.warn('Web Audio API混合失败，回退到简单合并轨道');
+                const fallbackStream = new MediaStream([
+                  ...videoTracks,
+                  ...systemAudioTracks,
+                  ...micAudioTracks
+                ]);
+                
+                finalStream = fallbackStream;
+                setMediaStream(fallbackStream);
+                
+                if (videoRef.current) {
+                  videoRef.current.srcObject = fallbackStream;
+                  videoRef.current.muted = true;
+                }
+                
+                console.log('合并后的流 - 视频轨道:', videoTracks.length, 
+                          '系统音频轨道:', systemAudioTracks.length, 
+                          '麦克风轨道:', micAudioTracks.length);
+              }
+            } catch (mixError) {
+              console.error('混合音频时出错，回退到简单合并:', mixError);
+              
+              // 回退到简单合并轨道
+              const fallbackStream = new MediaStream([
+                ...videoTracks,
+                ...systemAudioTracks,
+                ...micAudioTracks
+              ]);
+              
+              finalStream = fallbackStream;
+              setMediaStream(fallbackStream);
+              
+              if (videoRef.current) {
+                videoRef.current.srcObject = fallbackStream;
+                videoRef.current.muted = true;
+              }
+            }
+          } else {
+            console.warn('未获取到麦克风轨道');
+            setMediaStream(stream);
+            if (videoRef.current) {
+              videoRef.current.srcObject = stream;
+              videoRef.current.muted = true;
+            }
           }
         } catch (audioErr) {
-          console.error('无法获取麦克风访问权限:', audioErr)
-          setMediaStream(stream)
+          console.error('无法获取麦克风访问权限，只使用系统音频:', audioErr);
+          setMediaStream(stream);
           if (videoRef.current) {
-            videoRef.current.srcObject = stream
+            videoRef.current.srcObject = stream;
+            videoRef.current.muted = true;
           }
         }
       } else {
-        setMediaStream(stream)
+        console.log('用户选择不使用音频，只捕获视频');
+        setMediaStream(stream);
         if (videoRef.current) {
-          videoRef.current.srcObject = stream
+          videoRef.current.srcObject = stream;
+          videoRef.current.muted = true;
         }
       }
       
@@ -141,14 +279,14 @@ export default function ScreenRecordingPage() {
         setCurrentIndex: setCurrentScreenshotIndex,
         setStats: setScreenshotStats,
         lastImageDataRef
-      })
-      lastScreenshotTimeRef.current = Date.now()
+      });
+      lastScreenshotTimeRef.current = Date.now();
       
-      // 获取到媒体流后，直接开始录制而不是进入ready状态
-      handleStartRecording(stream)
+      // 获取到媒体流后，传递最终流给录制函数
+      handleStartRecording(finalStream);
     } catch (err) {
-      console.error('无法获取屏幕共享权限:', err)
-      alert('屏幕录制需要您的授权，请允许屏幕共享')
+      console.error('无法获取屏幕共享权限:', err);
+      alert('屏幕录制需要您的授权，请允许屏幕共享');
     }
   }
 
@@ -225,24 +363,83 @@ export default function ScreenRecordingPage() {
   // 完成录制处理
   const finishRecording = () => {
     if (recordedChunksRef.current.length > 0) {
-      const blob = new Blob(recordedChunksRef.current, { type: 'video/webm' })
-      const url = URL.createObjectURL(blob)
+      // 检查录制的数据块
+      console.log(`录制完成 - 共有 ${recordedChunksRef.current.length} 个数据块`);
       
-      setVideoBlob(blob)
-      setVideoUrl(url)
+      // 计算总数据大小
+      const totalSize = recordedChunksRef.current.reduce((acc, chunk) => acc + chunk.size, 0);
+      console.log(`总数据大小: ${(totalSize / 1024 / 1024).toFixed(2)}MB`);
+      
+      // 尝试自动检测最佳编码器
+      let mimeType = 'video/webm';
+      
+      // 检查第一个数据块的类型，如果存在
+      if (recordedChunksRef.current[0]?.type) {
+        mimeType = recordedChunksRef.current[0].type;
+        console.log(`使用数据块原始MIME类型: ${mimeType}`);
+      } else {
+        // 如果没有类型，尝试使用更通用的编码器设置
+        if (recordingOptions.withAudio) {
+          // 确保包含音频编解码器
+          mimeType = 'video/webm; codecs="vp8,opus"';
+        } else {
+          mimeType = 'video/webm; codecs="vp8"';
+        }
+        console.log(`未检测到数据块类型，使用默认MIME类型: ${mimeType}`);
+      }
+      
+      // 创建Blob前检查MIME类型兼容性
+      if (!mimeType.includes('opus') && recordingOptions.withAudio) {
+        console.log('MIME类型可能不包含音频编解码器，尝试添加');
+        if (mimeType.includes('codecs')) {
+          // 已有编解码器声明，尝试添加音频编解码器
+          if (mimeType.includes('vp8') && !mimeType.includes('opus')) {
+            mimeType = 'video/webm; codecs="vp8,opus"';
+          } else if (mimeType.includes('vp9') && !mimeType.includes('opus')) {
+            mimeType = 'video/webm; codecs="vp9,opus"';
+          }
+        } else {
+          // 没有编解码器声明，添加完整声明
+          mimeType = 'video/webm; codecs="vp8,opus"';
+        }
+        console.log(`修正后的MIME类型: ${mimeType}`);
+      }
+      
+      // 创建Blob
+      const blob = new Blob(recordedChunksRef.current, { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      
+      // 记录Blob信息以便调试
+      console.log(`视频生成完成:
+        - 大小: ${(blob.size / 1024 / 1024).toFixed(2)}MB
+        - 类型: ${blob.type}
+        - 数据块数: ${recordedChunksRef.current.length}
+        - 第一块大小: ${recordedChunksRef.current[0] ? (recordedChunksRef.current[0].size / 1024).toFixed(2) + 'KB' : '无'}
+      `);
+      
+      // 验证生成的Blob
+      if (blob.size < 1000) {
+        console.error('警告: 生成的视频文件异常小，可能没有正确录制');
+      }
+      
+      setVideoBlob(blob);
+      setVideoUrl(url);
       
       // 清理视频预览
       if (videoRef.current) {
-        videoRef.current.srcObject = null
+        videoRef.current.srcObject = null;
       }
+    } else {
+      console.error('没有录制到任何数据');
+      alert('录制失败，未捕获到任何数据');
     }
     
     // 确保当前截图索引指向最新截图
     if (screenshots.length > 0) {
-      setCurrentScreenshotIndex(screenshots.length - 1)
+      setCurrentScreenshotIndex(screenshots.length - 1);
     }
     
-    setRecordingState('idle')
+    setRecordingState('idle');
   }
   
   // 转换视频为MP4格式
