@@ -672,7 +672,7 @@ export default function ScreenRecordingPage() {
               {videoUrl && recordingState === 'idle' && (
                 <>
                   <div className="w-full flex flex-col gap-3">
-                    <p className="font-bold text-center mb-1">选择下载格式</p>
+                    {/* <p className="font-bold text-center mb-1">选择下载格式</p> */}
                     <div className="flex flex-row gap-2 w-full">
                       <button 
                         onClick={handleDownloadWebM}

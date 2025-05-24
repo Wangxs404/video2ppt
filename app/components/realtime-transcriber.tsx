@@ -139,90 +139,112 @@ export default function RealtimeTranscriber() {
       mediaRecorderRef.current = new MediaRecorder(stream); // { mimeType: "audio/webm;codecs=opus" } - removed for wider compatibility initially, but PCM is needed.
       audioChunksRef.current = [];
 
-      const wsUrl = "wss://openspeech.bytedance.com/api/v3/sauc/bigmodel";
-      console.log(`Attempting to connect to WebSocket: ${wsUrl}`);
+      // 连接到本地代理服务器而不是直接连接火山引擎
+      const wsUrl = "ws://localhost:3000/api/ws-proxy";
+      console.log(`Attempting to connect to WebSocket proxy: ${wsUrl}`);
       socketRef.current = new WebSocket(wsUrl);
       socketRef.current.binaryType = "arraybuffer"; // Important for receiving binary messages
 
       socketRef.current.onopen = () => {
-        console.log("WebSocket connected.");
-        setIsLoading(false);
-        setIsRecording(true);
-
-        const initialRequestPayload = {
-          header: {
-            appid: appKey,
-            cluster: "volc.sauc.common",
-            custom_request_header: { 
-                "X-Api-App-Key": appKey,
-                "X-Api-Access-Key": accessKey,
-                "X-Api-Resource-Id": resourceId,
-                "X-Api-Connect-Id": connectIdRef.current,
-            }
-          },
-          payload: {
-            reqid: connectIdRef.current,
-            appid: appKey,
-            uid: "browser-user-" + generateUUID().substring(0,8),
-            cluster: "volc.sauc.common",
-            config: {
-              workflow: "audio_in,resample,partition,vad,fe,decode,itn,text_post_process",
-              audio: {
-                format: "raw", // This implies we *must* send PCM data
-                sample_rate: 16000,
-                bits: 16,
-                channel: 1,
-                language: "zh-CN",
-                frame_ms: 200,
-              },
-              request: {
-                max_speech_duration: 30000,
-                result_type: "both",
-                show_utterances: true,
-                punctuation: "true",
-              },
-            },
-          }
-        };
-        const jsonPayload = JSON.stringify(initialRequestPayload);
-        const headerByte1 = 0b00010001;
-        const headerByte2 = 0b00010000;
-        const headerByte3 = 0b00010000; // JSON, No Gzip
-        const reservedByte = 0x00;
-        const payloadBytes = new TextEncoder().encode(jsonPayload);
-        const payloadSize = payloadBytes.byteLength;
-        const buffer = new ArrayBuffer(4 + 4 + payloadSize);
-        const view = new DataView(buffer);
-        view.setUint8(0, headerByte1);
-        view.setUint8(1, headerByte2);
-        view.setUint8(2, headerByte3);
-        view.setUint8(3, reservedByte);
-        view.setUint32(4, payloadSize, false);
-        new Uint8Array(buffer, 8).set(payloadBytes);
-        if(socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-            console.log("Sending initial Full Client Request:", initialRequestPayload);
-            socketRef.current.send(buffer);
-        } else {
-            console.error("Failed to send initial request, socket not open.");
-            setError("Failed to initialize connection with server.");
-            setIsLoading(false);
-            stopRecordingAndCloseSocket();
-            return;
-        }
-
-        if (mediaRecorderRef.current) {
-            mediaRecorderRef.current.ondataavailable = async (event) => {
-                if (event.data.size > 0 && socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-                    const arrayBuffer = await event.data.arrayBuffer();
-                    console.log(`Sending audio chunk: ${arrayBuffer.byteLength} bytes. Format might be incorrect (expecting PCM).`);
-                    sendAudioData(socketRef.current, arrayBuffer);
-                }
-            };
-            mediaRecorderRef.current.start(200); // Slice data every 200ms
-        }
+        console.log("WebSocket connected to proxy server.");
+        // 等待代理服务器的连接确认消息
       };
 
       socketRef.current.onmessage = (event) => {
+        // 处理代理服务器的连接状态消息
+        if (typeof event.data === 'string') {
+          try {
+            const message = JSON.parse(event.data);
+            if (message.type === 'connection' && message.status === 'connected') {
+              console.log("Proxy confirmed connection to Volcengine, starting recording...");
+              setIsLoading(false);
+              setIsRecording(true);
+              
+              // 发送初始请求到火山引擎（通过代理）
+              const initialRequestPayload = {
+                header: {
+                  appid: appKey,
+                  cluster: "volc.sauc.common",
+                  custom_request_header: { 
+                      "X-Api-App-Key": appKey,
+                      "X-Api-Access-Key": accessKey,
+                      "X-Api-Resource-Id": resourceId,
+                      "X-Api-Connect-Id": message.connectId || connectIdRef.current,
+                  }
+                },
+                payload: {
+                  reqid: message.connectId || connectIdRef.current,
+                  appid: appKey,
+                  uid: "browser-user-" + generateUUID().substring(0,8),
+                  cluster: "volc.sauc.common",
+                  config: {
+                    workflow: "audio_in,resample,partition,vad,fe,decode,itn,text_post_process",
+                    audio: {
+                      format: "raw", // This implies we *must* send PCM data
+                      sample_rate: 16000,
+                      bits: 16,
+                      channel: 1,
+                      language: "zh-CN",
+                      frame_ms: 200,
+                    },
+                    request: {
+                      max_speech_duration: 30000,
+                      result_type: "both",
+                      show_utterances: true,
+                      punctuation: "true",
+                    },
+                  },
+                }
+              };
+              const jsonPayload = JSON.stringify(initialRequestPayload);
+              const headerByte1 = 0b00010001;
+              const headerByte2 = 0b00010000;
+              const headerByte3 = 0b00010000; // JSON, No Gzip
+              const reservedByte = 0x00;
+              const payloadBytes = new TextEncoder().encode(jsonPayload);
+              const payloadSize = payloadBytes.byteLength;
+              const buffer = new ArrayBuffer(4 + 4 + payloadSize);
+              const view = new DataView(buffer);
+              view.setUint8(0, headerByte1);
+              view.setUint8(1, headerByte2);
+              view.setUint8(2, headerByte3);
+              view.setUint8(3, reservedByte);
+              view.setUint32(4, payloadSize, false);
+              new Uint8Array(buffer, 8).set(payloadBytes);
+              if(socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+                  console.log("Sending initial Full Client Request via proxy:", initialRequestPayload);
+                  socketRef.current.send(buffer);
+              } else {
+                  console.error("Failed to send initial request, socket not open.");
+                  setError("Failed to initialize connection with server.");
+                  setIsLoading(false);
+                  stopRecordingAndCloseSocket();
+                  return;
+              }
+
+              if (mediaRecorderRef.current) {
+                  mediaRecorderRef.current.ondataavailable = async (event) => {
+                      if (event.data.size > 0 && socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+                          const arrayBuffer = await event.data.arrayBuffer();
+                          console.log(`Sending audio chunk via proxy: ${arrayBuffer.byteLength} bytes. Format might be incorrect (expecting PCM).`);
+                          sendAudioData(socketRef.current, arrayBuffer);
+                      }
+                  };
+                  mediaRecorderRef.current.start(200); // Slice data every 200ms
+              }
+              return;
+            } else if (message.type === 'error') {
+              console.error("Proxy error:", message.message);
+              setError(`Proxy error: ${message.message}`);
+              stopRecordingAndCloseSocket();
+              return;
+            }
+          } catch (e) {
+            console.log("Received non-JSON string message from proxy:", event.data);
+          }
+        }
+
+        // 处理来自火山引擎的二进制消息（通过代理转发）
         if (event.data instanceof ArrayBuffer) {
             const dataView = new DataView(event.data);
             const messageType = (dataView.getUint8(1) & 0xF0) >> 4;
@@ -251,7 +273,7 @@ export default function RealtimeTranscriber() {
                     try {
                         const messageText = new TextDecoder("utf-8").decode(payloadData);
                         const message = JSON.parse(messageText);
-                        console.log("Received message from server:", message);
+                        console.log("Received message from server via proxy:", message);
                         if (message.header && message.header.status !== 20000000 && message.header.message) {
                            setError(`Server error (${message.header.status}): ${message.header.message}`);
                            stopRecordingAndCloseSocket();
@@ -287,14 +309,12 @@ export default function RealtimeTranscriber() {
             } else {
                 console.log("Received unhandled message type from server:", messageType.toString(2));
             }
-        } else {
-             console.log("Received non-binary message (e.g. text) from server:", event.data);
         }
       };
 
       socketRef.current.onerror = (wsEvent) => {
-        console.error("WebSocket error:", wsEvent);
-        setError("WebSocket connection error. Check console and API/network settings.");
+        console.error("WebSocket proxy error:", wsEvent);
+        setError("WebSocket proxy connection error. Make sure the proxy server is running.");
         setIsLoading(false);
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
             mediaRecorderRef.current.stop();
@@ -306,7 +326,7 @@ export default function RealtimeTranscriber() {
       };
 
       socketRef.current.onclose = (event) => {
-        console.log("WebSocket closed:", event.code, event.reason);
+        console.log("WebSocket proxy closed:", event.code, event.reason);
         if (!error) setIsLoading(false);
         setIsRecording(false);
         if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
@@ -317,7 +337,7 @@ export default function RealtimeTranscriber() {
         }
         if (event.code !== 1000 && !error) {
              const closeReason = event.reason || "No reason provided";
-             setError(`WebSocket closed: ${closeReason} (Code: ${event.code})`);
+             setError(`WebSocket proxy closed: ${closeReason} (Code: ${event.code})`);
         }
       };
 
@@ -334,7 +354,7 @@ export default function RealtimeTranscriber() {
   }
 
   return (
-    <div className="flex flex-col items-center space-y-6 p-4 bg-gray-900 text-white rounded-lg shadow-xl max-w-2xl mx-auto">
+    <div className="flex flex-col items-center space-y-6 p-4 bg-gray-900 text-white rounded-lg shadow-xl max-w-4xl mx-auto">
       <div className="w-full p-6 bg-gray-800 rounded-md min-h-[150px] text-lg font-mono whitespace-pre-wrap overflow-y-auto">
         <span className="text-gray-400">{transcription}</span>
         <span className="text-blue-400">{interimTranscription}</span>
@@ -349,7 +369,32 @@ export default function RealtimeTranscriber() {
         )}
       </div>
 
-      {error && <p className="text-red-400 bg-red-900 p-3 rounded-md w-full text-sm">Error: {error}</p>}
+      {error && (
+        <div className="w-full">
+          <p className="text-red-400 bg-red-900 p-3 rounded-md w-full text-sm mb-4">Error: {error}</p>
+          
+          {/* 1006 错误的特殊说明 */}
+          {error.includes("1006") && (
+            <div className="bg-yellow-900 border border-yellow-600 p-4 rounded-md text-yellow-200 text-sm">
+              <h4 className="font-bold mb-2">🔧 WebSocket 1006 错误解决方案：</h4>
+              <p className="mb-2">
+                <strong>问题原因：</strong> 浏览器无法在 WebSocket 握手时设置火山引擎 API 要求的认证头部（X-Api-App-Key 等）。
+              </p>
+              <p className="mb-2">
+                <strong>推荐解决方案：</strong>
+              </p>
+              <ol className="list-decimal list-inside space-y-1 ml-4">
+                <li>创建后端 WebSocket 代理服务器</li>
+                <li>前端连接到本地代理：<code className="bg-gray-800 px-1 rounded">ws://localhost:3000/api/ws-proxy</code></li>
+                <li>后端代理连接火山引擎并转发消息</li>
+              </ol>
+              <p className="mt-2 text-xs">
+                参考：<a href="https://www.volcengine.com/docs/6561/1354869" target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">火山引擎 ASR 官方文档</a>
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
       <div className="flex space-x-4">
         <button
@@ -369,20 +414,20 @@ export default function RealtimeTranscriber() {
       </div>
        <div className="mt-4 text-xs text-gray-500 w-full text-left">
         <p><strong>Status:</strong> {isRecording ? "Recording" : isLoading ? "Connecting..." : error ? "Error" : "Idle"}</p>
+        <p><strong>Connection:</strong> WebSocket Proxy (ws://localhost:3000/api/ws-proxy)</p>
         <p><strong>App Key:</strong> {appKey ? `${appKey.substring(0, 5)}...` : "Not set"}</p>
         <p><strong>Access Key:</strong> {accessKey ? "Set (hidden)" : "Not set"}</p>
         <p><strong>Resource ID:</strong> {resourceId || "Not set"}</p>
         <p><strong>Connect ID:</strong> {connectIdRef.current}</p>
-        <p className="mt-2 text-yellow-600">
-            <strong>Important:</strong> This component attempts to send audio data directly from MediaRecorder.
-            The Volcengine API expects raw PCM (16-bit, 16kHz, mono). MediaRecorder often outputs WebM/Opus.
-            For reliable transcription, you MUST implement client-side audio conversion to PCM format before sending it via WebSocket.
-            This typically involves using the Web Audio API (AudioContext, ScriptProcessorNode, or AudioWorkletNode).
-        </p>
-         <p className="mt-1 text-yellow-600">
-            WebSocket authentication in browsers cannot directly set custom HTTP headers for the initial handshake.
-            The current implementation sends auth details in the first WebSocket message post-connection. If the server strictly requires handshake headers, a backend proxy is necessary.
-        </p>
+        <div className="mt-2 p-2 bg-green-900 border border-green-600 rounded text-green-200">
+            <p className="font-bold">✅ 使用 WebSocket 代理服务器</p>
+            <p className="text-xs mt-1">
+                现在通过本地代理服务器连接火山引擎 API，解决了浏览器认证头部限制问题。
+            </p>
+            <p className="text-xs mt-1">
+                <strong>启动方式：</strong> 使用 <code className="bg-gray-800 px-1 rounded">npm run dev</code> 启动代理服务器
+            </p>
+        </div>
       </div>
     </div>
   );
