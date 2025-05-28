@@ -2,6 +2,7 @@
   "name": "video2ppt",
   "version": "0.1.0",
   "private": true,
+  "license": "CC-BY-NC-SA-4.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -12,6 +13,7 @@
     "@types/file-saver": "^2.0.7",
     "@types/ws": "^8.18.1",
     "@vercel/analytics": "^1.5.0",
+    "@vercel/speed-insights": "^1.2.0",
     "clsx": "^2.0.0",
     "file-saver": "^2.0.5",
     "framer-motion": "^10.16.4",
