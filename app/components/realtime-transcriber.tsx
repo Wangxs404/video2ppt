@@ -414,20 +414,18 @@ export default function RealtimeTranscriber() {
       </div>
        <div className="mt-4 text-xs text-gray-500 w-full text-left">
         <p><strong>Status:</strong> {isRecording ? "Recording" : isLoading ? "Connecting..." : error ? "Error" : "Idle"}</p>
-        <p><strong>Connection:</strong> WebSocket Proxy (ws://localhost:3000/api/ws-proxy)</p>
         <p><strong>App Key:</strong> {appKey ? `${appKey.substring(0, 5)}...` : "Not set"}</p>
         <p><strong>Access Key:</strong> {accessKey ? "Set (hidden)" : "Not set"}</p>
         <p><strong>Resource ID:</strong> {resourceId || "Not set"}</p>
         <p><strong>Connect ID:</strong> {connectIdRef.current}</p>
-        <div className="mt-2 p-2 bg-green-900 border border-green-600 rounded text-green-200">
-            <p className="font-bold">✅ 使用 WebSocket 代理服务器</p>
-            <p className="text-xs mt-1">
-                现在通过本地代理服务器连接火山引擎 API，解决了浏览器认证头部限制问题。
-            </p>
-            <p className="text-xs mt-1">
-                <strong>启动方式：</strong> 使用 <code className="bg-gray-800 px-1 rounded">npm run dev</code> 启动代理服务器
-            </p>
-        </div>
+        <p className="mt-2 text-yellow-600">
+            <strong>重要提示：</strong> 当前实现尝试直接从浏览器连接火山引擎 WebSocket API。
+            由于浏览器安全限制，无法在握手时设置必需的认证头部，因此会出现 1006 连接关闭错误。
+        </p>
+         <p className="mt-1 text-yellow-600">
+            <strong>解决方案：</strong> 需要创建后端 WebSocket 代理服务器来处理认证头部并转发消息。
+            这不是本地开发服务器的问题，而是浏览器的安全机制限制。
+        </p>
       </div>
     </div>
   );
