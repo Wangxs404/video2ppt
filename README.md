@@ -84,7 +84,8 @@ pnpm dev
 ### 商业授权
 
 如需商业使用，请联系版权持有者获取商业许可：
-- 📧 **联系方式**: [待添加邮箱地址]
+
+- 📧 **联系方式**: wangxs1995s@gmail.com
 - 🔗 **GitHub**: https://github.com/AxisIndie/video2ppt
 - 💼 **商业合作**: 我们提供灵活的商业许可方案
 
@@ -94,19 +95,4 @@ pnpm dev
 - 📋 **法律条文**: [完整法律文本](https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode)
 - 📖 **本地文件**: 详细条款请查看 [LICENSE](./LICENSE) 文件
 
-### 双重许可模式
-
-```
-开源版本: CC BY-NC-SA 4.0 (禁止商业使用)
-    +
-商业版本: 自定义商业许可证 (联系获取)
-```
-
-这种模式允许：
-- 🎓 **开源社区**: 免费使用、学习、贡献
-- 💼 **商业用户**: 通过商业许可获得完整使用权
-- 🛡️ **知识产权**: 保护原创者的权益
-
----
-
-**Copyright (c) 2024 AxisIndie/video2ppt - Licensed under CC BY-NC-SA 4.0**
+**Copyright (c) 2025 video2ppt - Licensed under CC BY-NC-SA 4.0**
