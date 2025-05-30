@@ -17,8 +17,7 @@ export default function ScreenRecordingPage() {
   const [recordingState, setRecordingState] = useState<'idle' | 'ready' | 'recording' | 'paused' | 'processing' | 'converting'>('idle')
   const [recordingTime, setRecordingTime] = useState<number>(0)
   const [recordingOptions, setRecordingOptions] = useState({
-    withAudio: true,
-    captureArea: 'screen' as 'screen' | 'window' | 'tab',
+    withAudio: false,
   })
   
   // 视频录制相关
@@ -58,14 +57,6 @@ export default function ScreenRecordingPage() {
     })
   }
 
-  // 设置捕获区域
-  const handleSetCaptureArea = (area: 'screen' | 'window' | 'tab') => {
-    setRecordingOptions({
-      ...recordingOptions,
-      captureArea: area,
-    })
-  }
-
   // 截图函数
   const captureScreenshot = () => {
     captureAndFilterScreenshot({
@@ -100,13 +91,17 @@ export default function ScreenRecordingPage() {
   // 开始录制准备
   const handleStartPrepare = async () => {
     try {
-      // 请求屏幕共享，确保捕获系统音频
+      // 请求屏幕共享，始终包含系统音频
       const displayMediaOptions = {
         video: {
-          cursor: "always"
+          cursor: "always",
+          displaySurface: "monitor", // 优先显示器/屏幕选项
+          logicalSurface: true,
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
         } as any,
-        // 重新启用系统音频捕获
-        audio: recordingOptions.withAudio
+        audio: true, // 始终录制系统音频
+        preferCurrentTab: false // 明确不偏好当前标签页
       };
       
       const stream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
@@ -125,7 +120,7 @@ export default function ScreenRecordingPage() {
         });
       }
       
-      // 如果需要麦克风音频，则额外捕获并合并
+      // 如果用户选择包含麦克风音频，则额外捕获并合并
       if (recordingOptions.withAudio) {
         try {
           // 获取麦克风音频 - 明确请求用户麦克风
@@ -249,7 +244,7 @@ export default function ScreenRecordingPage() {
               }
             }
           } else {
-            console.warn('未获取到麦克风轨道');
+            console.warn('未获取到麦克风轨道，只使用系统音频');
             setMediaStream(stream);
             if (videoRef.current) {
               videoRef.current.srcObject = stream;
@@ -265,7 +260,7 @@ export default function ScreenRecordingPage() {
           }
         }
       } else {
-        console.log('用户选择不使用音频，只捕获视频');
+        console.log('用户选择不使用麦克风，只录制系统音频');
         setMediaStream(stream);
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
@@ -286,7 +281,18 @@ export default function ScreenRecordingPage() {
       handleStartRecording(finalStream);
     } catch (err) {
       console.error('无法获取屏幕共享权限:', err);
-      alert('屏幕录制需要您的授权，请允许屏幕共享');
+      // 根据错误类型提供更具体的指导
+      if (err instanceof Error) {
+        if (err.name === 'NotAllowedError') {
+          alert('录制被取消。请重新点击"开始录制"，并在弹出的对话框中选择"整个屏幕"或您想录制的显示器。');
+        } else if (err.name === 'NotFoundError') {
+          alert('未找到可录制的屏幕。请确保您的设备支持屏幕录制功能。');
+        } else {
+          alert('屏幕录制失败。请重新尝试，并在弹出的对话框中选择"整个屏幕"选项。');
+        }
+      } else {
+        alert('屏幕录制失败。请重新尝试，并在弹出的对话框中选择"整个屏幕"选项。');
+      }
     }
   }
 
@@ -378,19 +384,14 @@ export default function ScreenRecordingPage() {
         mimeType = recordedChunksRef.current[0].type;
         console.log(`使用数据块原始MIME类型: ${mimeType}`);
       } else {
-        // 如果没有类型，尝试使用更通用的编码器设置
-        if (recordingOptions.withAudio) {
-          // 确保包含音频编解码器
-          mimeType = 'video/webm; codecs="vp8,opus"';
-        } else {
-          mimeType = 'video/webm; codecs="vp8"';
-        }
+        // 如果没有类型，使用包含音频编解码器的默认设置（因为始终录制系统音频）
+        mimeType = 'video/webm; codecs="vp8,opus"';
         console.log(`未检测到数据块类型，使用默认MIME类型: ${mimeType}`);
       }
       
-      // 创建Blob前检查MIME类型兼容性
-      if (!mimeType.includes('opus') && recordingOptions.withAudio) {
-        console.log('MIME类型可能不包含音频编解码器，尝试添加');
+      // 确保MIME类型包含音频编解码器（因为始终录制系统音频）
+      if (!mimeType.includes('opus')) {
+        console.log('MIME类型不包含音频编解码器，尝试添加');
         if (mimeType.includes('codecs')) {
           // 已有编解码器声明，尝试添加音频编解码器
           if (mimeType.includes('vp8') && !mimeType.includes('opus')) {
@@ -572,7 +573,7 @@ export default function ScreenRecordingPage() {
           <div className="card bg-light">
             <h2 className="text-2xl font-bold mb-4">屏幕录制</h2>
             <p className="mb-6">
-              录制您的屏幕内容，可以捕获整个屏幕、应用窗口或浏览器标签页。
+              点击开始录制后，请选择"整个屏幕"选项开始录制。
             </p>
             
             {/* 录制预览区域 */}
@@ -591,8 +592,8 @@ export default function ScreenRecordingPage() {
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
-                  <p className="text-xl font-bold">准备好开始录制了吗？</p>
-                  <p className="text-gray-400 mt-2">点击下方按钮选择录制内容</p>
+                  <p className="text-xl font-bold">准备开始全屏录制</p>
+                  <p className="text-gray-400 mt-2">点击开始录制后，请在弹窗中选择"整个屏幕"</p>
                 </div>
               ) : recordingState === 'recording' || recordingState === 'paused' ? (
                 <div className="absolute top-4 right-4 flex items-center space-x-2">
@@ -618,8 +619,8 @@ export default function ScreenRecordingPage() {
               )}
             </div>
             
-            {/* 录制选项 - 始终显示麦克风设置 */}
-            <div className="flex flex-col sm:flex-row justify-between mb-6 space-y-4 sm:space-y-0">
+            {/* 录制选项 - 麦克风开关控制 */}
+            <div className="flex justify-start mb-4">
               <div className="flex items-center">
                 <label className="inline-flex items-center cursor-pointer">
                   <input 
@@ -630,16 +631,11 @@ export default function ScreenRecordingPage() {
                     className="sr-only peer" 
                   />
                   <div className={`w-11 h-6 bg-gray-200 border-3 border-black peer-focus:outline-none peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[0px] after:left-[0px] after:bg-white after:border-3 after:border-black after:h-5 after:w-5 after:transition-all peer-checked:bg-accent relative ${recordingState !== 'idle' && recordingState !== 'ready' ? 'opacity-70' : ''}`}></div>
-                  <span className="ml-3 font-bold">包含麦克风声音</span>
+                  <span className="ml-3 font-bold">同时录制麦克风</span>
                 </label>
               </div>
-              
-              {(recordingState === 'idle' || recordingState === 'ready') && !videoUrl && (
-                <div className="font-bold">
-                  捕获区域: {recordingOptions.captureArea === 'screen' ? '整个屏幕' : recordingOptions.captureArea === 'window' ? '应用窗口' : '浏览器标签'}
-                </div>
-              )}
             </div>
+            
             
             {/* 录制控制按钮 */}
             <div className="flex flex-wrap gap-4">
@@ -672,7 +668,6 @@ export default function ScreenRecordingPage() {
               {videoUrl && recordingState === 'idle' && (
                 <>
                   <div className="w-full flex flex-col gap-3">
-                    {/* <p className="font-bold text-center mb-1">选择下载格式</p> */}
                     <div className="flex flex-row gap-2 w-full">
                       <button 
                         onClick={handleDownloadWebM}
@@ -762,12 +757,6 @@ export default function ScreenRecordingPage() {
                   <p className="text-gray-400 mt-2">录制并处理视频后查看幻灯片</p>
                 </div>
               )}
-              
-              {/* {screenshots.length > 0 && (
-                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black bg-opacity-50 px-3 py-1 text-white font-bold rounded-md">
-                  第 {currentScreenshotIndex + 1} / {screenshots.length} 页
-                </div>
-              )} */}
             </div>
             
             {/* PPT控制选项 */}
@@ -782,11 +771,6 @@ export default function ScreenRecordingPage() {
                   <div className="w-11 h-6 bg-gray-200 border-3 border-black peer-focus:outline-none peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[0px] after:left-[0px] after:bg-white after:border-3 after:border-black after:h-5 after:w-5 after:transition-all peer-checked:bg-accent relative"></div>
                   <span className="ml-3 font-bold">自动提取</span>
                 </label>
-                {/* {recordingState !== 'idle' && (
-                  <div className="text-sm font-medium">
-                    过滤统计: 保存了 {screenshotStats.saved}/{screenshotStats.total} 张截图
-                  </div>
-                )} */}
               </div>
               
               <div className="font-bold">
@@ -838,11 +822,11 @@ export default function ScreenRecordingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-start">
               <div className="bg-primary text-light w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
-              <p><strong>多种录制模式</strong> - 支持录制整个屏幕、单个应用窗口或浏览器标签页</p>
+              <p><strong>全屏录制</strong> - 录制整个屏幕内容，捕获所有应用和桌面活动</p>
             </div>
             <div className="flex items-start">
               <div className="bg-secondary w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
-              <p><strong>音频捕获</strong> - 可选择是否包含麦克风声音</p>
+              <p><strong>音频捕获</strong> - 始终录制系统音频，可选择是否包含麦克风声音</p>
             </div>
             <div className="flex items-start">
               <div className="bg-accent text-light w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
