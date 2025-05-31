@@ -2,8 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-// 导入抽离的工具函数
-import { calculateImageDifference, extractFramesFromVideo, setupVideoCanvas } from '../utils/videoProcessing'
+// 从分离的模块导入
+import { calculateImageDifference, setupVideoCanvas } from '../utils/videoProcessing'
+import { processLocalVideo, LocalVideoProcessingOptions, LocalVideoProcessingCallbacks } from '../utils/localVideoProcessing'
 import { createAndDownloadPPT } from '../utils/pptGeneration'
 import { isVideoFile, createFileObjectURL, revokeFileObjectURL, formatFileSize } from '../utils/fileHandling'
 
@@ -19,7 +20,18 @@ export default function LocalVideoPage() {
   
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const previewUrlsRef = useRef<string[]>([])
+  const videoUrlRef = useRef<string>('')
   
+  // 同步状态到 ref
+  useEffect(() => {
+    previewUrlsRef.current = previewScreenshots
+  }, [previewScreenshots])
+  
+  useEffect(() => {
+    videoUrlRef.current = videoUrl
+  }, [videoUrl])
+
   // 处理拖拽事件
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault()
@@ -61,6 +73,9 @@ export default function LocalVideoPage() {
       revokeFileObjectURL(videoUrl)
     }
     
+    // 清理之前的截图URL
+    previewScreenshots.forEach(url => revokeFileObjectURL(url))
+    
     const newVideoUrl = createFileObjectURL(file)
     setVideoUrl(newVideoUrl)
     
@@ -77,6 +92,9 @@ export default function LocalVideoPage() {
       revokeFileObjectURL(videoUrl)
       setVideoUrl('')
     }
+    
+    // 清理所有截图URL
+    previewScreenshots.forEach(url => revokeFileObjectURL(url))
     setScreenshots([])
     setPreviewScreenshots([])
     setExtractionProgress(0)
@@ -88,19 +106,29 @@ export default function LocalVideoPage() {
     
     setIsExtracting(true)
     
-    const options = {
+    // 清除之前的截图URL
+    previewScreenshots.forEach(url => revokeFileObjectURL(url))
+    setPreviewScreenshots([])
+    setScreenshots([])
+    
+    const options: LocalVideoProcessingOptions = {
       captureInterval: 3, // 捕获间隔（秒）
-      differenceThreshold: 30, // 差异阈值
       maxScreenshots: 256 // 最大截图数
     }
     
-    const callbacks = {
+    const callbacks: LocalVideoProcessingCallbacks = {
       onProgress: (progress: number) => {
         setExtractionProgress(progress)
       },
       onFrameCaptured: (blob: Blob, url: string) => {
         // 更新预览，保持最多显示5张
         setPreviewScreenshots(prevUrls => {
+          // 如果要删除旧的URL，先释放它们
+          if (prevUrls.length >= 5) {
+            const urlsToRemove = prevUrls.slice(0, prevUrls.length - 4)
+            urlsToRemove.forEach(oldUrl => revokeFileObjectURL(oldUrl))
+          }
+          
           const updatedUrls = [...prevUrls, url].slice(-5)
           return updatedUrls
         })
@@ -116,7 +144,7 @@ export default function LocalVideoPage() {
     }
     
     try {
-      await extractFramesFromVideo(
+      await processLocalVideo(
         videoRef.current,
         canvasRef.current,
         options,
@@ -147,14 +175,24 @@ export default function LocalVideoPage() {
   useEffect(() => {
     return () => {
       // 释放截图URL
-      previewScreenshots.forEach(url => revokeFileObjectURL(url))
+      previewUrlsRef.current.forEach(url => {
+        try {
+          revokeFileObjectURL(url)
+        } catch (error) {
+          console.warn('清理截图URL时出错:', error)
+        }
+      })
       
       // 释放视频URL
-      if (videoUrl) {
-        revokeFileObjectURL(videoUrl)
+      if (videoUrlRef.current) {
+        try {
+          revokeFileObjectURL(videoUrlRef.current)
+        } catch (error) {
+          console.warn('清理视频URL时出错:', error)
+        }
       }
     }
-  }, [previewScreenshots, videoUrl])
+  }, []) // 移除依赖，只在组件卸载时清理
 
   return (
     <main className="container mx-auto px-4 py-10">

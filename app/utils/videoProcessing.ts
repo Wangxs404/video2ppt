@@ -179,106 +179,6 @@ export const setupVideoCanvas = (video: HTMLVideoElement, canvas: HTMLCanvasElem
 }
 
 /**
- * 处理视频并提取有意义的帧作为PPT幻灯片
- * @param video HTML视频元素
- * @param canvas HTML画布元素
- * @param options 提取选项
- * @param callbacks 回调函数
- */
-export const extractFramesFromVideo = async (
-  video: HTMLVideoElement,
-  canvas: HTMLCanvasElement,
-  options: {
-    captureInterval: number,
-    differenceThreshold: number,
-    maxScreenshots: number
-  },
-  callbacks: {
-    onProgress: (progress: number) => void,
-    onFrameCaptured: (blob: Blob, url: string) => void,
-    onComplete: (screenshots: Blob[]) => void
-  }
-): Promise<void> => {
-  const { captureInterval, differenceThreshold, maxScreenshots } = options
-  const { onProgress, onFrameCaptured, onComplete } = callbacks
-  
-  const context = canvas.getContext('2d')
-  if (!context) return
-  
-  setupVideoCanvas(video, canvas)
-  
-  let currentTime = 0
-  const totalDuration = video.duration
-  let previousImageData: ImageData | null = null
-  const newScreenshots: Blob[] = []
-  let noNewScreenshotCount = 0
-  
-  const captureFrame = async (): Promise<void> => {
-    video.currentTime = currentTime
-    
-    return new Promise<void>((resolve) => {
-      video.onseeked = () => {
-        context.drawImage(video, 0, 0, canvas.width, canvas.height)
-        const currentImageData = context.getImageData(0, 0, canvas.width, canvas.height)
-        
-        if (previousImageData) {
-          const difference = calculateImageDifference(previousImageData, currentImageData)
-          
-          if (difference > differenceThreshold) {
-            canvas.toBlob((blob) => {
-              if (blob) {
-                newScreenshots.push(blob)
-                
-                const url = URL.createObjectURL(blob)
-                onFrameCaptured(blob, url)
-              }
-              noNewScreenshotCount = 0
-              resolve()
-            }, 'image/jpeg', 0.95)
-          } else {
-            noNewScreenshotCount++
-            resolve()
-          }
-        } else {
-          canvas.toBlob((blob) => {
-            if (blob) {
-              newScreenshots.push(blob)
-              
-              const url = URL.createObjectURL(blob)
-              onFrameCaptured(blob, url)
-            }
-            resolve()
-          }, 'image/jpeg', 0.95)
-        }
-        
-        previousImageData = currentImageData
-      }
-    })
-  }
-  
-  // 播放视频一段时间确保元数据已加载
-  video.play()
-  await new Promise(resolve => setTimeout(resolve, 500))
-  video.pause()
-  
-  try {
-    while (currentTime <= totalDuration && noNewScreenshotCount < 10) {
-      await captureFrame()
-      currentTime += captureInterval
-      onProgress(Math.min((currentTime / totalDuration) * 100, 100))
-      
-      if (newScreenshots.length >= maxScreenshots) {
-        break
-      }
-    }
-  } catch (error) {
-    console.error('提取视频帧错误:', error)
-  } finally {
-    onComplete(newScreenshots)
-  }
-}
-
-/**
  * 使用ffmpeg.wasm将WebM格式视频转换为MP4格式
  * @param webmBlob WebM格式的视频Blob对象
  * @param options 可选配置项
@@ -398,4 +298,104 @@ export const convertWebmToMp4 = async (
       console.warn('FFmpeg实例终止失败:', e);
     }
   }
-}; 
+};
+
+/**
+ * 处理视频并提取有意义的帧作为PPT幻灯片（原版函数，保持向后兼容）
+ * @param video HTML视频元素
+ * @param canvas HTML画布元素
+ * @param options 提取选项
+ * @param callbacks 回调函数
+ */
+export const extractFramesFromVideo = async (
+  video: HTMLVideoElement,
+  canvas: HTMLCanvasElement,
+  options: {
+    captureInterval: number,
+    differenceThreshold: number,
+    maxScreenshots: number
+  },
+  callbacks: {
+    onProgress: (progress: number) => void,
+    onFrameCaptured: (blob: Blob, url: string) => void,
+    onComplete: (screenshots: Blob[]) => void
+  }
+): Promise<void> => {
+  const { captureInterval, differenceThreshold, maxScreenshots } = options
+  const { onProgress, onFrameCaptured, onComplete } = callbacks
+  
+  const context = canvas.getContext('2d')
+  if (!context) return
+  
+  setupVideoCanvas(video, canvas)
+  
+  let currentTime = 0
+  const totalDuration = video.duration
+  let previousImageData: ImageData | null = null
+  const newScreenshots: Blob[] = []
+  let noNewScreenshotCount = 0
+  
+  const captureFrame = async (): Promise<void> => {
+    video.currentTime = currentTime
+    
+    return new Promise<void>((resolve) => {
+      video.onseeked = () => {
+        context.drawImage(video, 0, 0, canvas.width, canvas.height)
+        const currentImageData = context.getImageData(0, 0, canvas.width, canvas.height)
+        
+        if (previousImageData) {
+          const difference = calculateImageDifference(previousImageData, currentImageData)
+          
+          if (difference > differenceThreshold) {
+            canvas.toBlob((blob) => {
+              if (blob) {
+                newScreenshots.push(blob)
+                
+                const url = URL.createObjectURL(blob)
+                onFrameCaptured(blob, url)
+              }
+              noNewScreenshotCount = 0
+              resolve()
+            }, 'image/jpeg', 0.95)
+          } else {
+            noNewScreenshotCount++
+            resolve()
+          }
+        } else {
+          canvas.toBlob((blob) => {
+            if (blob) {
+              newScreenshots.push(blob)
+              
+              const url = URL.createObjectURL(blob)
+              onFrameCaptured(blob, url)
+            }
+            resolve()
+          }, 'image/jpeg', 0.95)
+        }
+        
+        previousImageData = currentImageData
+      }
+    })
+  }
+  
+  // 播放视频一段时间确保元数据已加载
+  video.play()
+  await new Promise(resolve => setTimeout(resolve, 500))
+  video.pause()
+  
+  try {
+    while (currentTime <= totalDuration && noNewScreenshotCount < 10) {
+      await captureFrame()
+      currentTime += captureInterval
+      onProgress(Math.min((currentTime / totalDuration) * 100, 100))
+      
+      if (newScreenshots.length >= maxScreenshots) {
+        break
+      }
+    }
+  } catch (error) {
+    console.error('提取视频帧错误:', error)
+  } finally {
+    onComplete(newScreenshots)
+  }
+} 
