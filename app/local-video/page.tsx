@@ -13,15 +13,18 @@ export default function LocalVideoPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
   const [isExtracting, setIsExtracting] = useState<boolean>(false)
+  const [isPreprocessing, setIsPreprocessing] = useState<boolean>(false)
   const [videoUrl, setVideoUrl] = useState<string>('')
   const [screenshots, setScreenshots] = useState<Blob[]>([])
   const [previewScreenshots, setPreviewScreenshots] = useState<string[]>([])
   const [extractionProgress, setExtractionProgress] = useState<number>(0)
+  const [preprocessProgress, setPreprocessProgress] = useState<number>(0)
   
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const previewUrlsRef = useRef<string[]>([])
   const videoUrlRef = useRef<string>('')
+  const isPreprocessingRef = useRef<boolean>(false)
   
   // 同步状态到 ref
   useEffect(() => {
@@ -31,6 +34,10 @@ export default function LocalVideoPage() {
   useEffect(() => {
     videoUrlRef.current = videoUrl
   }, [videoUrl])
+
+  useEffect(() => {
+    isPreprocessingRef.current = isPreprocessing
+  }, [isPreprocessing])
 
   // 处理拖拽事件
   const handleDrag = (e: React.DragEvent) => {
@@ -88,6 +95,12 @@ export default function LocalVideoPage() {
   // 清除已选择的文件
   const handleClearFile = () => {
     setSelectedFile(null)
+    setIsExtracting(false)
+    setIsPreprocessing(false)
+    isPreprocessingRef.current = false
+    setExtractionProgress(0)
+    setPreprocessProgress(0)
+    
     if (videoUrl) {
       revokeFileObjectURL(videoUrl)
       setVideoUrl('')
@@ -97,7 +110,6 @@ export default function LocalVideoPage() {
     previewScreenshots.forEach(url => revokeFileObjectURL(url))
     setScreenshots([])
     setPreviewScreenshots([])
-    setExtractionProgress(0)
   }
   
   // 开始提取PPT
@@ -105,6 +117,10 @@ export default function LocalVideoPage() {
     if (!videoRef.current || !canvasRef.current || !selectedFile) return
     
     setIsExtracting(true)
+    setIsPreprocessing(true)
+    isPreprocessingRef.current = true
+    setExtractionProgress(0)
+    setPreprocessProgress(0)
     
     // 清除之前的截图URL
     previewScreenshots.forEach(url => revokeFileObjectURL(url))
@@ -118,27 +134,37 @@ export default function LocalVideoPage() {
     
     const callbacks: LocalVideoProcessingCallbacks = {
       onProgress: (progress: number) => {
-        setExtractionProgress(progress)
+        if (isPreprocessingRef.current) {
+          // 预处理阶段更新预处理进度
+          setPreprocessProgress(progress)
+          // 当预处理进度达到100%时，切换到提取阶段
+          if (progress >= 100) {
+            setIsPreprocessing(false)
+            isPreprocessingRef.current = false
+            setExtractionProgress(0)
+          }
+        } else {
+          // 正式提取阶段更新提取进度
+          setExtractionProgress(progress)
+        }
       },
       onFrameCaptured: (blob: Blob, url: string) => {
-        // 更新预览，保持最多显示5张
-        setPreviewScreenshots(prevUrls => {
-          // 如果要删除旧的URL，先释放它们
-          if (prevUrls.length >= 5) {
-            const urlsToRemove = prevUrls.slice(0, prevUrls.length - 4)
-            urlsToRemove.forEach(oldUrl => revokeFileObjectURL(oldUrl))
-          }
-          
-          const updatedUrls = [...prevUrls, url].slice(-5)
-          return updatedUrls
-        })
+        // 确保预处理状态已结束
+        if (isPreprocessingRef.current) {
+          setIsPreprocessing(false)
+          isPreprocessingRef.current = false
+        }
+        
+        // 添加新的预览截图，不限制数量
+        setPreviewScreenshots(prevUrls => [...prevUrls, url])
         
         // 同时更新screenshots状态，使PPT数量动态更新
         setScreenshots(prev => [...prev, blob])
       },
       onComplete: (newScreenshots: Blob[]) => {
-        // 由于我们已经在每帧更新了screenshots，这里不需要再设置
-        // 只需标记提取过程已完成
+        // 标记所有处理已完成
+        setIsPreprocessing(false)
+        isPreprocessingRef.current = false
         setIsExtracting(false)
       }
     }
@@ -152,6 +178,8 @@ export default function LocalVideoPage() {
       )
     } catch (error) {
       console.error('提取帧错误:', error)
+      setIsPreprocessing(false)
+      isPreprocessingRef.current = false
       setIsExtracting(false)
     }
   }
@@ -195,6 +223,25 @@ export default function LocalVideoPage() {
   }, []) // 移除依赖，只在组件卸载时清理
 
   return (
+    <>
+      <style jsx>{`
+        .scrollbar-visible::-webkit-scrollbar {
+          height: 8px;
+        }
+        .scrollbar-visible::-webkit-scrollbar-track {
+          background: #f1f1f1;
+          border-radius: 4px;
+        }
+        .scrollbar-visible::-webkit-scrollbar-thumb {
+          background: #000000;
+          border-radius: 4px;
+          border: 1px solid #ffffff;
+        }
+        .scrollbar-visible::-webkit-scrollbar-thumb:hover {
+          background: #333333;
+        }
+      `}</style>
+      
     <main className="container mx-auto px-4 py-10">
       <div className="max-w-3xl mx-auto">
         <h1 className="text-4xl font-black mb-8">
@@ -203,49 +250,38 @@ export default function LocalVideoPage() {
         </h1>
 
         <div className="card bg-light mb-8">
-          <h2 className="text-2xl font-bold mb-4">上传视频文件</h2>
-          <p className="mb-6">支持MP4, AVI, MOV, WMV等常见视频格式，单个文件大小限制100MB。</p>
+          {!selectedFile && (
+            <>
+              <h2 className="text-2xl font-bold mb-4">上传视频文件</h2>
+              <p className="mb-6">支持MP4, AVI, MOV, WMV等常见视频格式，单个文件大小限制100MB。</p>
+            </>
+          )}
           
           {/* 文件上传区域 */}
-          <div 
-            className={`border-3 border-dashed border-black bg-white p-8 mb-6 text-center ${dragActive ? 'bg-secondary/20' : ''}`}
-            onDragEnter={handleDrag}
-            onDragLeave={handleDrag}
-            onDragOver={handleDrag}
-            onDrop={handleDrop}
-          >
-            {selectedFile ? (
-              <div className="space-y-4">
-                <div className="bg-primary text-light inline-block px-4 py-2 border-3 border-black">
-                  已选择视频文件: {selectedFile.name}
-                </div>
-                <p>文件大小: {formatFileSize(selectedFile.size)}</p>
-                <button 
-                  onClick={handleClearFile}
-                  className="btn bg-accent text-light mt-4"
-                >
-                  重新选择
-                </button>
-              </div>
-            ) : (
-              <>
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <p className="text-lg mb-4">将视频文件拖放到这里</p>
-                <p className="text-gray-500 mb-4">- 或者 -</p>
-                <label className="btn bg-primary text-light cursor-pointer">
-                  选择视频文件
-                  <input 
-                    type="file" 
-                    className="hidden" 
-                    accept="video/*"
-                    onChange={handleFileChange}
-                  />
-                </label>
-              </>
-            )}
-          </div>
+          {!selectedFile && (
+            <div 
+              className={`border-3 border-dashed border-black bg-white p-8 mb-6 text-center ${dragActive ? 'bg-secondary/20' : ''}`}
+              onDragEnter={handleDrag}
+              onDragLeave={handleDrag}
+              onDragOver={handleDrag}
+              onDrop={handleDrop}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              <p className="text-lg mb-4">将视频文件拖放到这里</p>
+              <p className="text-gray-500 mb-4">- 或者 -</p>
+              <label className="btn bg-primary text-light cursor-pointer">
+                选择视频文件
+                <input 
+                  type="file" 
+                  className="hidden" 
+                  accept="video/*"
+                  onChange={handleFileChange}
+                />
+              </label>
+            </div>
+          )}
           
           {/* 视频预览 */}
           {videoUrl && (
@@ -265,12 +301,20 @@ export default function LocalVideoPage() {
           
           {/* 处理按钮 */}
           {selectedFile && !isExtracting && screenshots.length === 0 && (
-            <button 
-              onClick={handleExtractPPT}
-              className="btn bg-primary text-light w-full text-xl py-4 transform hover:rotate-1"
-            >
-              开始提取PPT
-            </button>
+            <div className="space-y-4">
+              <button 
+                onClick={handleExtractPPT}
+                className="btn bg-primary text-light w-full text-xl py-4 transform hover:rotate-1"
+              >
+                开始提取PPT
+              </button>
+              <button 
+                onClick={handleClearFile}
+                className="btn bg-accent text-light w-full py-2 text-sm transform hover:rotate-1"
+              >
+                重新选择视频
+              </button>
+            </div>
           )}
           
           {/* 提取中状态 */}
@@ -279,29 +323,55 @@ export default function LocalVideoPage() {
               <div className="w-full h-6 bg-white border-3 border-black overflow-hidden">
                 <div 
                   className="h-full bg-primary transition-all duration-300"
-                  style={{ width: `${extractionProgress}%` }}
+                  style={{ width: isPreprocessing ? `${preprocessProgress}%` : `${extractionProgress}%` }}
                 ></div>
               </div>
-              <p className="text-center font-bold">正在提取PPT ({extractionProgress.toFixed(0)}%)...</p>
+              <p className="text-center font-bold">
+                {isPreprocessing 
+                  ? `视频预处理中……(${preprocessProgress.toFixed(0)}%)` 
+                  : `正在提取PPT (${extractionProgress.toFixed(0)}%)...`
+                }
+              </p>
             </div>
           )}
           
           {/* 隐藏的画布用于处理视频帧 */}
           <canvas ref={canvasRef} className="hidden"></canvas>
           
-          {/* 截图预览 */}
+          {/* PPT预览 */}
           {previewScreenshots.length > 0 && (
             <div className="mt-6">
-              <h3 className="text-xl font-bold mb-3">截图预览</h3>
-              <div className="flex overflow-x-auto gap-3 p-2 border-3 border-black bg-white">
-                {previewScreenshots.map((url, index) => (
-                  <img 
-                    key={index} 
-                    src={url} 
-                    alt={`截图 ${index + 1}`} 
-                    className="h-24 border-2 border-black shadow-brutal"
-                  />
-                ))}
+              <h3 className="text-xl font-bold mb-3">PPT预览</h3>
+              <div className="relative">
+                <div 
+                  className="flex overflow-x-auto gap-3 p-4 border-3 border-black bg-white scrollbar-visible"
+                  style={{
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: '#000000 #ffffff'
+                  }}
+                >
+                  {previewScreenshots.map((url, index) => (
+                    <div
+                      key={index}
+                      className="flex-shrink-0 relative group"
+                    >
+                      <img 
+                        src={url} 
+                        alt={`PPT幻灯片 ${index + 1}`} 
+                        className="h-32 w-auto border-2 border-black shadow-brutal transition-transform hover:scale-105"
+                        style={{ minWidth: '120px' }}
+                      />
+                      <div className="absolute bottom-1 right-1 bg-black text-white text-xs px-1 py-0.5 rounded opacity-75">
+                        {index + 1}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {previewScreenshots.length > 4 && (
+                  <div className="flex justify-center mt-2 text-sm text-gray-600">
+                    <span>← 拖动查看更多幻灯片 →</span>
+                  </div>
+                )}
               </div>
               <p className="text-sm text-center mt-2">
                 {isExtracting 
@@ -314,21 +384,30 @@ export default function LocalVideoPage() {
           
           {/* 下载按钮 */}
           {screenshots.length > 0 && !isExtracting && (
-            <button 
-              onClick={handleDownloadPPT}
-              disabled={isProcessing}
-              className={`btn bg-accent text-light w-full text-xl py-4 mt-6 transform hover:rotate-1 ${isProcessing ? 'opacity-70 cursor-not-allowed' : ''}`}
-            >
-              {isProcessing ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  生成PPT中...
-                </span>
-              ) : '下载PPT文件'}
-            </button>
+            <div className="space-y-4">
+              <button 
+                onClick={handleDownloadPPT}
+                disabled={isProcessing}
+                className={`btn bg-accent text-light w-full text-xl py-4 mt-6 transform hover:rotate-1 ${isProcessing ? 'opacity-70 cursor-not-allowed' : ''}`}
+              >
+                {isProcessing ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    生成PPT中...
+                  </span>
+                ) : '下载PPT文件'}
+              </button>
+              <button 
+                onClick={handleClearFile}
+                className="btn bg-secondary text-black w-full py-2 text-sm transform hover:rotate-1"
+                disabled={isProcessing}
+              >
+                重新选择视频
+              </button>
+            </div>
           )}
         </div>
 
@@ -351,5 +430,6 @@ export default function LocalVideoPage() {
         </div>
       </div>
     </main>
+    </>
   )
 } 
