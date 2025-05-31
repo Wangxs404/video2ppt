@@ -5,6 +5,7 @@ import Link from 'next/link'
 // 从分离的模块导入
 import { calculateImageDifference, setupVideoCanvas } from '../utils/videoProcessing'
 import { processLocalVideo, LocalVideoProcessingOptions, LocalVideoProcessingCallbacks } from '../utils/localVideoProcessing'
+import { VideoDurationInfo, detectVideoFormat } from '../utils/videoDurationUtils'
 import { createAndDownloadPPT } from '../utils/pptGeneration'
 import { isVideoFile, createFileObjectURL, revokeFileObjectURL, formatFileSize } from '../utils/fileHandling'
 
@@ -19,6 +20,8 @@ export default function LocalVideoPage() {
   const [previewScreenshots, setPreviewScreenshots] = useState<string[]>([])
   const [extractionProgress, setExtractionProgress] = useState<number>(0)
   const [preprocessProgress, setPreprocessProgress] = useState<number>(0)
+  const [durationInfo, setDurationInfo] = useState<VideoDurationInfo | null>(null)
+  const [videoFormat, setVideoFormat] = useState<string>('')
   
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -75,6 +78,10 @@ export default function LocalVideoPage() {
   const handleVideoSelect = (file: File) => {
     setSelectedFile(file)
     
+    // 检测视频格式
+    const format = detectVideoFormat(file)
+    setVideoFormat(format)
+    
     // 释放之前的URL
     if (videoUrl) {
       revokeFileObjectURL(videoUrl)
@@ -86,10 +93,17 @@ export default function LocalVideoPage() {
     const newVideoUrl = createFileObjectURL(file)
     setVideoUrl(newVideoUrl)
     
-    // 清除之前的截图
+    // 清除之前的截图和状态
     setScreenshots([])
     setPreviewScreenshots([])
     setExtractionProgress(0)
+    setPreprocessProgress(0)
+    setDurationInfo(null)
+    
+    // 给出格式提示
+    if (format === 'webm') {
+      console.log('🎬 检测到WebM格式视频，将使用增强的时长检测算法')
+    }
   }
 
   // 清除已选择的文件
@@ -129,7 +143,9 @@ export default function LocalVideoPage() {
     
     const options: LocalVideoProcessingOptions = {
       captureInterval: 3, // 捕获间隔（秒）
-      maxScreenshots: 256 // 最大截图数
+      maxScreenshots: 256, // 最大截图数
+      // debug: true, // 启用调试输出以便观察webm处理过程
+      file: selectedFile // 传递文件信息用于格式检测
     }
     
     const callbacks: LocalVideoProcessingCallbacks = {
@@ -166,6 +182,11 @@ export default function LocalVideoPage() {
         setIsPreprocessing(false)
         isPreprocessingRef.current = false
         setIsExtracting(false)
+      },
+      onDurationDetected: (detectedDurationInfo: VideoDurationInfo) => {
+        // 保存时长检测结果
+        setDurationInfo(detectedDurationInfo)
+        console.log('📊 时长检测完成:', detectedDurationInfo)
       }
     }
     
@@ -253,7 +274,10 @@ export default function LocalVideoPage() {
           {!selectedFile && (
             <>
               <h2 className="text-2xl font-bold mb-4">上传视频文件</h2>
-              <p className="mb-6">支持MP4, AVI, MOV, WMV等常见视频格式，单个文件大小限制100MB。</p>
+              <p className="mb-6">支持MP4, AVI, MOV, WMV, WebM等常见视频格式，单个文件大小限制100MB。</p>
+              <p className="mb-6 text-sm text-gray-600">
+                <strong>🚀 快速检测：</strong> 跳过元数据加载，直接使用seek和二分法检测时长，提高处理速度
+              </p>
             </>
           )}
           
@@ -283,6 +307,8 @@ export default function LocalVideoPage() {
             </div>
           )}
           
+          
+          
           {/* 视频预览 */}
           {videoUrl && (
             <div className="mb-6">
@@ -307,6 +333,7 @@ export default function LocalVideoPage() {
                 className="btn bg-primary text-light w-full text-xl py-4 transform hover:rotate-1"
               >
                 开始提取PPT
+                {videoFormat === 'webm' && <span className="ml-2 text-sm">(增强模式)</span>}
               </button>
               <button 
                 onClick={handleClearFile}
@@ -332,6 +359,11 @@ export default function LocalVideoPage() {
                   : `正在提取PPT (${extractionProgress.toFixed(0)}%)...`
                 }
               </p>
+              {videoFormat === 'webm' && isPreprocessing && (
+                <p className="text-center text-sm text-gray-600">
+                  WebM格式正在使用增强检测算法，可能需要更长时间
+                </p>
+              )}
             </div>
           )}
           
@@ -378,6 +410,11 @@ export default function LocalVideoPage() {
                   ? `正在提取幻灯片，已获取 ${screenshots.length} 张` 
                   : `共提取 ${screenshots.length} 张幻灯片`
                 }
+                {durationInfo && !isExtracting && (
+                  <span className="ml-2 text-gray-500">
+                    (基于{durationInfo.method}检测)
+                  </span>
+                )}
               </p>
             </div>
           )}
@@ -425,6 +462,10 @@ export default function LocalVideoPage() {
             <li className="flex items-start">
               <div className="bg-accent text-light w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
               <p><strong>快速处理</strong> - 几分钟内完成转换，节省大量手动整理时间</p>
+            </li>
+            <li className="flex items-start">
+              <div className="bg-yellow-400 w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">⚡</div>
+              <p><strong>快速检测算法</strong> - 采用ssim算法提高准确率</p>
             </li>
           </ul>
         </div>
