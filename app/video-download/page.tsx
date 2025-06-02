@@ -38,7 +38,6 @@ export default function VideoDownloadPage() {
   const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
   const [error, setError] = useState('');
   const [healthInfo, setHealthInfo] = useState<any>(null);
-  const [downloadMode, setDownloadMode] = useState<'fly' | 'local'>('fly');
 
   // 健康检查
   const checkHealth = async () => {
@@ -107,11 +106,8 @@ export default function VideoDownloadPage() {
     setError('');
     setDownloadResult(null);
 
-    const endpoint = downloadMode === 'fly' ? '/api/download-video' : '/api/download-local';
-    const apiDisplayName = downloadMode === 'fly' ? 'Fly.io 云端服务' : '本地服务';
-
     try {
-      const response = await fetch(endpoint, {
+      const response = await fetch('/api/download-video', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -124,7 +120,7 @@ export default function VideoDownloadPage() {
       if (response.ok && data.success) {
         setDownloadResult(data);
       } else {
-        let errorMsg = `HTTP ${response.status}: ${response.statusText} (来自 ${apiDisplayName})\n`;
+        let errorMsg = `HTTP ${response.status}: ${response.statusText} (来自 Fly.io 云端服务)\n`;
         if (data.error) {
           errorMsg += `错误: ${data.error}\n`;
         }
@@ -137,7 +133,7 @@ export default function VideoDownloadPage() {
         setError(errorMsg);
       }
     } catch (err: any) {
-      setError(`调用 ${apiDisplayName} 时网络错误: ${err.message || '未知错误'}`);
+      setError(`调用 Fly.io 云端服务时网络错误: ${err.message || '未知错误'}`);
     } finally {
       setLoading(false);
     }
@@ -146,7 +142,7 @@ export default function VideoDownloadPage() {
   // 下载文件到本地
   const handleDownloadFile = () => {
     if (downloadResult?.downloadUrl) {
-      const fullUrl = downloadMode === 'fly' && downloadResult.downloadUrl.startsWith('/api/file')
+      const fullUrl = downloadResult.downloadUrl.startsWith('/api/file')
         ? `${API_BASE_URL}${downloadResult.downloadUrl}`
         : downloadResult.downloadUrl;
       window.open(fullUrl, '_blank');
@@ -199,38 +195,6 @@ export default function VideoDownloadPage() {
                 </div>
               </div>
             )}
-          </div>
-
-          {/* 下载模式选择器 */}
-          <div className="bg-gray-100 p-4 rounded-xl">
-            <h3 className="text-gray-800 font-semibold text-lg mb-3">下载模式选择</h3>
-            <div className="flex space-x-4">
-              <button
-                onClick={() => setDownloadMode('fly')}
-                className={`px-6 py-3 rounded-lg font-medium transition-all w-full ${ 
-                  downloadMode === 'fly' 
-                    ? 'bg-blue-600 text-white shadow-lg'
-                    : 'bg-white text-blue-700 hover:bg-blue-50 border border-blue-300'
-                }`}
-              >
-                🚀 云端下载 (Fly.io)
-              </button>
-              <button
-                onClick={() => setDownloadMode('local')}
-                className={`px-6 py-3 rounded-lg font-medium transition-all w-full ${ 
-                  downloadMode === 'local' 
-                    ? 'bg-green-600 text-white shadow-lg'
-                    : 'bg-white text-green-700 hover:bg-green-50 border border-green-300'
-                }`}
-              >
-                💻 本地下载 (lux.exe)
-              </button>
-            </div>
-            <p className="text-xs text-gray-500 mt-2">
-              {downloadMode === 'fly' 
-                ? '使用已部署的Fly.io云服务进行下载，稳定快速。'
-                : '直接使用您本地环境的lux.exe进行下载，适合测试或特定网络环境。确保bin目录下有lux.exe。'}
-            </p>
           </div>
 
           {/* 输入框 */}
@@ -315,12 +279,10 @@ export default function VideoDownloadPage() {
             className={`w-full py-4 px-6 rounded-xl font-semibold text-white text-lg transition-all transform ${ 
               loading || !videoUrl.trim()
                 ? 'bg-gray-400 cursor-not-allowed'
-                : downloadMode === 'fly'
-                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl hover:scale-[1.02]'
-                  : 'bg-gradient-to-r from-green-600 to-teal-600 hover:from-green-700 hover:to-teal-700 shadow-lg hover:shadow-xl hover:scale-[1.02]'
+                : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl hover:scale-[1.02]'
             }`}
           >
-            {loading ? `⏳ ${downloadMode === 'fly' ? '云端' : '本地'}下载中...` : `📥 ${downloadMode === 'fly' ? '开始云端下载' : '开始本地下载'}`}
+            {loading ? '⏳ 云端下载中...' : '📥 开始云端下载'}
           </button>
 
           {/* 错误提示 */}
@@ -340,9 +302,9 @@ export default function VideoDownloadPage() {
 
           {/* 下载成功结果 */}
           {downloadResult && (
-            <div className={`bg-gradient-to-r ${downloadMode === 'fly' ? 'from-green-50 to-emerald-50 border-green-200' : 'from-sky-50 to-cyan-50 border-sky-200'} rounded-xl p-6`}>
-              <h3 className={`${downloadMode === 'fly' ? 'text-green-800' : 'text-sky-800'} font-semibold text-lg mb-4`}>
-                ✅ {downloadMode === 'fly' ? '云端' : '本地'}下载完成！
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 rounded-xl p-6">
+              <h3 className="text-green-800 font-semibold text-lg mb-4">
+                ✅ 云端下载完成！
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
                 <div>
@@ -355,22 +317,16 @@ export default function VideoDownloadPage() {
                     {downloadResult.fileSize ? `${Math.round(downloadResult.fileSize / 1024 / 1024)} MB` : '未知'}
                   </p>
                 </div>
-                {downloadResult.downloadId && downloadMode === 'fly' && (
+                {downloadResult.downloadId && (
                   <div className="md:col-span-2">
-                    <span className="text-gray-600 font-medium">下载ID (Fly.io):</span>
+                    <span className="text-gray-600 font-medium">下载ID:</span>
                     <p className="text-gray-800 mt-1 font-mono text-xs">{downloadResult.downloadId}</p>
-                  </div>
-                )}
-                {downloadResult.filePath && downloadMode === 'local' && (
-                  <div className="md:col-span-2">
-                    <span className="text-gray-600 font-medium">文件路径 (本地):</span>
-                    <p className="text-gray-800 mt-1 font-mono text-xs">{downloadResult.filePath}</p>
                   </div>
                 )}
               </div>
               <button
                 onClick={handleDownloadFile}
-                className={`w-full px-6 py-3 ${downloadMode === 'fly' ? 'bg-green-600 hover:bg-green-700' : 'bg-sky-600 hover:bg-sky-700'} text-white rounded-lg transition-all font-medium shadow-md hover:shadow-lg`}
+                className="w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all font-medium shadow-md hover:shadow-lg"
               >
                 📥 下载文件到本地
               </button>
@@ -379,13 +335,13 @@ export default function VideoDownloadPage() {
 
           {/* 下载中提示 */}
           {loading && (
-            <div className={`bg-gradient-to-r ${downloadMode === 'fly' ? 'from-blue-50 to-indigo-50 border-blue-200' : 'from-gray-50 to-slate-50 border-gray-200'} rounded-xl p-6`}>
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 rounded-xl p-6">
               <div className="flex items-center space-x-4">
-                <div className={`animate-spin rounded-full h-8 w-8 border-b-2 ${downloadMode === 'fly' ? 'border-blue-600' : 'border-gray-600'}`}></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                 <div>
-                  <div className={`${downloadMode === 'fly' ? 'text-blue-800' : 'text-gray-800'} font-medium`}>正在{downloadMode === 'fly' ? '云端' : '本地'}处理视频下载...</div>
-                  <div className={`${downloadMode === 'fly' ? 'text-blue-600' : 'text-gray-600'} text-sm mt-1`}>
-                    {downloadMode === 'fly' ? '使用 Fly.io 服务，请耐心等待' : '使用本地 Lux 工具下载，请耐心等待'}
+                  <div className="text-blue-800 font-medium">正在云端处理视频下载...</div>
+                  <div className="text-blue-600 text-sm mt-1">
+                    使用 Fly.io 服务，请耐心等待
                   </div>
                 </div>
               </div>
@@ -403,7 +359,7 @@ export default function VideoDownloadPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
               <div className="space-y-2">
                 <p>• 🎯 支持 B站、YouTube、抖音等主流平台</p>
-                <p>• ☁️ 基于云端服务，无需本地工具</p>
+                <p>• ☁️ 基于 Fly.io 云端服务，稳定快速</p>
                 <p>• 🔍 可先获取视频信息再决定是否下载</p>
               </div>
               <div className="space-y-2">
