@@ -2,23 +2,21 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { processLocalVideo, LocalVideoProcessingOptions, LocalVideoProcessingCallbacks } from '../utils/localVideoProcessing';
-import { createAndDownloadPPT } from '../utils/pptGeneration';
+import { generatePptBlob } from '../utils/pptGeneration';
 import { VideoDurationInfo } from '../utils/videoDurationUtils';
 
-const DEBUG_ENABLED = false; // 新增 DEBUG_ENABLED 定义
+const DEBUG_ENABLED = false;
 
 // Fly.io部署的API基础URL
 const API_BASE_URL = 'https://video-backend-flyio.fly.dev';
 
-// 新增：创建虚拟文件对象用于格式检测
+// 创建虚拟文件对象用于格式检测
 const createVirtualFileFromUrl = (videoUrl: string, fileName?: string): File => {
-  // 从 URL 或文件名推断格式
   const url = new URL(videoUrl);
   const pathname = url.pathname;
   const extension = pathname.split('.').pop()?.toLowerCase() || 'mp4';
   const name = fileName || `downloaded_video.${extension}`;
   
-  // 创建一个空的 Blob 作为占位符
   const blob = new Blob([], { type: `video/${extension}` });
   return new File([blob], name, { type: `video/${extension}` });
 };
@@ -47,120 +45,183 @@ interface DownloadResult {
   logs?: string[];
 }
 
+// 处理状态枚举
+enum ProcessState {
+  IDLE = 'idle',
+  FETCHING_INFO = 'fetching_info',
+  DOWNLOADING = 'downloading',
+  LOCALIZING = 'localizing',
+  LOADING_METADATA = 'loading_metadata',
+  PREPROCESSING = 'preprocessing',
+  EXTRACTING = 'extracting',
+  GENERATING_PPT = 'generating_ppt',
+  COMPLETED = 'completed',
+  ERROR = 'error'
+}
+
 export default function VideoDownloadPage() {
   const [videoUrl, setVideoUrl] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [infoLoading, setInfoLoading] = useState(false);
-  const [healthChecking, setHealthChecking] = useState(false);
-  const [downloadResult, setDownloadResult] = useState<DownloadResult | null>(null);
-  const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
+  const [processState, setProcessState] = useState<ProcessState>(ProcessState.IDLE);
+  const [currentStep, setCurrentStep] = useState(0);
+  const [progress, setProgress] = useState(0);
   const [error, setError] = useState('');
-  const [healthInfo, setHealthInfo] = useState<any>(null);
-
-  // 新增状态
-  const [videoSrc, setVideoSrc] = useState<string | null>(null);
-  const [extractedFrames, setExtractedFrames] = useState<string[]>([]);
-  const [isExtractingFrames, setIsExtractingFrames] = useState(false);
-  const [isGeneratingPpt, setIsGeneratingPpt] = useState(false);
-  const videoPlayerRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  // 新增本地化相关状态
+  const [retryCount, setRetryCount] = useState(0);
+  const [videoInfo, setVideoInfo] = useState<VideoInfo | null>(null);
+  const [downloadResult, setDownloadResult] = useState<DownloadResult | null>(null);
   const [localVideoBlob, setLocalVideoBlob] = useState<Blob | null>(null);
   const [localVideoUrl, setLocalVideoUrl] = useState<string | null>(null);
-  const [isDownloadingVideo, setIsDownloadingVideo] = useState(false);
-  const [downloadProgress, setDownloadProgress] = useState<number>(0);
-  const [videoReady, setVideoReady] = useState(false);
-
-  // 新增状态，参考 local-video/page.tsx
-  const [preprocessProgress, setPreprocessProgress] = useState<number>(0);
-  const [extractionProgress, setExtractionProgress] = useState<number>(0);
+  const [extractedFrames, setExtractedFrames] = useState<string[]>([]);
   const [durationInfo, setDurationInfo] = useState<VideoDurationInfo | null>(null);
-  const [isPreprocessing, setIsPreprocessing] = useState<boolean>(false);
-  const isPreprocessingRef = useRef<boolean>(false);
 
-  // 同步 isPreprocessing 状态到 ref
-  useEffect(() => {
-    isPreprocessingRef.current = isPreprocessing;
-  }, [isPreprocessing]);
+  // 新增服务状态相关
+  const [serviceStatus, setServiceStatus] = useState<'unknown' | 'healthy' | 'error'>('unknown');
+  const [isCheckingService, setIsCheckingService] = useState(false);
 
-  // 清理本地视频资源
+  // 新增：用于存储生成的PPT数据
+  const [pptData, setPptData] = useState<{ pptBlob: Blob | null, fileName: string | null }>({ pptBlob: null, fileName: null });
+
+  const videoPlayerRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // 更新处理步骤配置以包含 LOADING_METADATA
+  const steps = [
+    { name: '获取视频信息', icon: '🔍' },    // 0
+    { name: '下载视频', icon: '📥' },        // 1
+    { name: '本地化处理', icon: '💾' },    // 2
+    { name: '加载视频数据', icon: '⏳' },  // 3 (新增)
+    { name: '视频预处理', icon: '⚙️' },    // 4
+    { name: '提取关键帧', icon: '🖼️' },    // 5
+    { name: '生成PPT', icon: '📄' }         // 6
+  ];
+
+  // 清理资源
   useEffect(() => {
+    // 页面加载时检查服务状态
+    checkServiceHealth();
+    
     return () => {
       if (localVideoUrl) {
         URL.revokeObjectURL(localVideoUrl);
       }
+      if (retryTimeoutRef.current) {
+        clearTimeout(retryTimeoutRef.current);
+      }
     };
-  }, [localVideoUrl]);
+  }, []);
 
-  // 健康检查
-  const checkHealth = async () => {
-    setHealthChecking(true);
-    setError('');
-    
+  // 检查服务健康状态
+  const checkServiceHealth = async () => {
+    setIsCheckingService(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/api/health`);
-      const data = await response.json();
+      const response = await fetch(`${API_BASE_URL}/api/health`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      });
       
       if (response.ok) {
-        setHealthInfo(data);
+        setServiceStatus('healthy');
       } else {
-        setError(`健康检查失败: ${data.error || 'Unknown error'}`);
+        setServiceStatus('error');
       }
-    } catch (err) {
-      setError('无法连接到API服务，请检查网络连接');
+    } catch (error) {
+      console.warn('服务健康检查失败:', error);
+      setServiceStatus('error');
     } finally {
-      setHealthChecking(false);
+      setIsCheckingService(false);
     }
   };
 
+  // 自动重试逻辑
+  const withRetry = async <T,>(
+    operation: () => Promise<T>,
+    maxRetries: number = 3,
+    timeout: number = 20000
+  ): Promise<T> => {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        setRetryCount(attempt);
+        
+        // 创建带超时的Promise
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          retryTimeoutRef.current = setTimeout(() => {
+            reject(new Error(`操作超时 (${timeout/1000}秒)`));
+          }, timeout);
+        });
+
+        const result = await Promise.race([operation(), timeoutPromise]);
+        
+        if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current);
+          retryTimeoutRef.current = null;
+        }
+        
+        return result;
+      } catch (error: any) {
+        console.warn(`尝试 ${attempt}/${maxRetries} 失败:`, error.message);
+        
+        if (retryTimeoutRef.current) {
+          clearTimeout(retryTimeoutRef.current);
+          retryTimeoutRef.current = null;
+    }
+
+        if (attempt === maxRetries) {
+          // 在最后一次重试失败时，提供更详细的错误信息
+          let errorMessage = `操作失败，已重试 ${maxRetries} 次: ${error.message}`;
+          
+          if (error.message.includes('500') || error.message.includes('Internal Server Error')) {
+            errorMessage += '\n\n可能的原因：\n• Fly.io 后端服务暂时不可用\n• 视频链接格式不支持\n• 服务器正在维护\n\n建议：\n• 检查视频链接是否正确\n• 稍后重试\n• 尝试使用其他视频链接';
+          } else if (error.message.includes('fetch')) {
+            errorMessage += '\n\n网络连接问题，请检查：\n• 网络连接是否正常\n• 防火墙设置\n• 代理配置';
+          }
+          
+          throw new Error(errorMessage);
+        }
+        
+        // 等待一段时间后重试
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      }
+    }
+    throw new Error('重试逻辑错误');
+  };
+
   // 获取视频信息
-  const getVideoInfo = async () => {
-    if (!videoUrl.trim()) {
-      setError('请输入视频URL');
-      return;
-    }
-
-    setInfoLoading(true);
-    setError('');
-    setVideoInfo(null);
-    setVideoSrc(null);
-    setExtractedFrames([]);
-    // 清理本地化状态
-    setVideoReady(false);
-    setLocalVideoBlob(null);
-    if (localVideoUrl) {
-      URL.revokeObjectURL(localVideoUrl);
-      setLocalVideoUrl(null);
-    }
-
-    try {
+  const fetchVideoInfo = async (): Promise<VideoInfo> => {
       const response = await fetch(`${API_BASE_URL}/api/info`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+      headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ videoUrl }),
       });
 
       const data: VideoInfo = await response.json();
-
-      if (data.success) {
-        setVideoInfo(data);
-      } else {
-        setError(data.error || data.message || '获取视频信息失败');
+    if (!data.success) {
+      throw new Error(data.error || data.message || '获取视频信息失败');
       }
-
-    } catch (err) {
-      setError('网络错误或服务器错误');
-    } finally {
-      setInfoLoading(false);
-    }
+    return data;
   };
 
-  // 新增：下载视频到本地
-  const downloadVideoToLocal = async (videoUrl: string): Promise<Blob> => {
-    const response = await fetch(videoUrl);
+  // 下载视频
+  const downloadVideo = async (): Promise<DownloadResult> => {
+    const response = await fetch('/api/download-video', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ videoUrl }),
+    });
+
+    const data: DownloadResult = await response.json();
+    if (!response.ok || !data.success) {
+      throw new Error(data.error || `HTTP ${response.status}: ${response.statusText}`);
+    }
+    return data;
+  };
+
+  // 本地化视频
+  const localizeVideo = async (downloadUrl: string): Promise<Blob> => {
+    const fullUrl = downloadUrl.startsWith('/api/file')
+      ? `${API_BASE_URL}${downloadUrl}`
+      : downloadUrl;
+
+    const response = await fetch(fullUrl);
     if (!response.ok) {
       throw new Error(`下载失败: ${response.status} ${response.statusText}`);
     }
@@ -178,7 +239,6 @@ export default function VideoDownloadPage() {
 
     while (true) {
       const { done, value } = await reader.read();
-      
       if (done) break;
       
       chunks.push(value);
@@ -186,363 +246,509 @@ export default function VideoDownloadPage() {
       
       if (total > 0) {
         const progress = (downloaded / total) * 100;
-        setDownloadProgress(progress);
+        setProgress(progress);
       }
     }
 
-    const blob = new Blob(chunks, { type: 'video/mp4' });
-    return blob;
+    return new Blob(chunks, { type: 'video/mp4' });
   };
 
-  // 新增：准备本地视频
-  const prepareLocalVideo = async () => {
-    if (!videoSrc) return;
-
-    setIsDownloadingVideo(true);
-    setDownloadProgress(0);
-    setVideoReady(false);
-    setError('');
-
-    try {
-      // 下载视频到本地
-      const blob = await downloadVideoToLocal(videoSrc);
-      setLocalVideoBlob(blob);
-
-      // 创建本地URL
-      if (localVideoUrl) {
-        URL.revokeObjectURL(localVideoUrl);
+  // 新增：加载视频元数据辅助函数
+  const loadVideoMetadata = (videoElement: HTMLVideoElement): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      if (!videoElement) {
+        reject(new Error("Video element not available for metadata loading."));
+        return;
       }
-      const newLocalUrl = URL.createObjectURL(blob);
-      setLocalVideoUrl(newLocalUrl);
-      setVideoReady(true);
+      // Check if metadata is already loaded
+      if (videoElement.readyState >= HTMLMediaElement.HAVE_METADATA) {
+        if (DEBUG_ENABLED) console.log('Video metadata already available upon loadVideoMetadata call.', { duration: videoElement.duration });
+        resolve();
+        return;
+      }
 
-      console.log(`✅ 视频已下载到本地，大小: ${(blob.size / 1024 / 1024).toFixed(2)}MB`);
-    } catch (err: any) {
-      setError(`视频本地化失败: ${err.message || '未知错误'}`);
-    } finally {
-      setIsDownloadingVideo(false);
-    }
+      const handleMetadataLoaded = () => {
+        videoElement.removeEventListener('loadedmetadata', handleMetadataLoaded);
+        videoElement.removeEventListener('error', handleError);
+        if (DEBUG_ENABLED) console.log('Video metadata loaded successfully via event.', { duration: videoElement.duration });
+        resolve();
+      };
+
+      const handleError = (event: Event) => {
+        videoElement.removeEventListener('loadedmetadata', handleMetadataLoaded);
+        videoElement.removeEventListener('error', handleError);
+        console.error("Error loading video in loadVideoMetadata:", event, videoElement.error);
+        let errorMsg = "视频加载失败";
+        if (videoElement.error) {
+          switch (videoElement.error.code) {
+            case MediaError.MEDIA_ERR_ABORTED: errorMsg += "：用户中止。"; break;
+            case MediaError.MEDIA_ERR_NETWORK: errorMsg += "：网络错误。"; break;
+            case MediaError.MEDIA_ERR_DECODE: errorMsg += "：解码错误。"; break;
+            case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED: errorMsg += "：格式不支持。"; break;
+            default: errorMsg += "：未知错误。";
+          }
+        }
+        reject(new Error(errorMsg));
+      };
+
+      videoElement.addEventListener('loadedmetadata', handleMetadataLoaded);
+      videoElement.addEventListener('error', handleError);
+      
+      // If src is set and load() hasn't been called or needs to be re-triggered for a new src
+      // videoElement.load(); // Calling load() might be necessary if src was just changed by React
+      // However, since the video element with a key re-mounts, it should auto-load.
+      // If issues persist, uncommenting videoElement.load() here could be a fallback.
+      if (DEBUG_ENABLED) console.log('loadVideoMetadata: Event listeners attached. Waiting for metadata.', { src: videoElement.src, readyState: videoElement.readyState });
+    });
   };
 
-  // 下载视频
-  const handleDownload = async () => {
+  // 处理视频帧提取
+  const extractFrames = async (): Promise<string[]> => {
+    if (
+      !videoPlayerRef.current || 
+      !canvasRef.current || 
+      !videoPlayerRef.current.src || 
+      videoPlayerRef.current.readyState < HTMLMediaElement.HAVE_METADATA // 确保元数据已加载
+    ) {
+      console.error('extractFrames pre-condition failed:', {
+        videoPlayer: !!videoPlayerRef.current,
+        canvas: !!canvasRef.current,
+        videoSrc: videoPlayerRef.current?.src,
+        readyState: videoPlayerRef.current?.readyState
+      });
+      throw new Error('视频播放器未就绪或视频源无效');
+    }
+
+    const virtualFile = createVirtualFileFromUrl(videoUrl, downloadResult?.fileName);
+    const frames: string[] = [];
+
+    const options: LocalVideoProcessingOptions = {
+      captureInterval: 3,
+      maxScreenshots: 50,
+      file: virtualFile
+    };
+
+    return new Promise((resolve, reject) => {
+      const callbacks: LocalVideoProcessingCallbacks = {
+        onProgress: (progress: number) => {
+          setProgress(progress);
+        },
+        onFrameCaptured: (blob: Blob, url: string) => {
+          frames.push(url);
+        },
+        onComplete: (screenshots: Blob[]) => {
+          resolve(frames);
+        },
+        onDurationDetected: (detectedDurationInfo: VideoDurationInfo) => {
+          setDurationInfo(detectedDurationInfo);
+        }
+      };
+
+      processLocalVideo(
+        videoPlayerRef.current!,
+        canvasRef.current!,
+        options,
+        callbacks
+      ).catch(reject);
+    });
+  };
+
+  // 生成PPT
+  const generatePPT = async (frames: string[]): Promise<void> => {
+    const frameBlobs = await Promise.all(
+      frames.map(async (base64String) => {
+        const res = await fetch(base64String);
+        return res.blob();
+      })
+    );
+    await generatePptBlob(frameBlobs);
+  };
+
+  // 主处理函数
+  const handleStartExtraction = async () => {
     if (!videoUrl.trim()) {
       setError('请输入视频URL');
       return;
     }
+    if (serviceStatus === 'error') {
+      setError('后端服务异常，请稍后重试或检查服务状态。');
+      return;
+    }
 
-    setLoading(true);
+    // 重置状态，准备开始新的处理流程
     setError('');
+    setRetryCount(0);
+    setExtractedFrames([]);
+    setProgress(0);
+    setVideoInfo(null);
     setDownloadResult(null);
-
-    try {
-      const response = await fetch('/api/download-video', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ videoUrl }),
-      });
-
-      const data: DownloadResult = await response.json();
-
-      if (response.ok && data.success) {
-        setDownloadResult(data);
-        if (data.downloadUrl) {
-          const fullUrl = data.downloadUrl.startsWith('/api/file')
-            ? `${API_BASE_URL}${data.downloadUrl}`
-            : data.downloadUrl;
-          setVideoSrc(fullUrl);
-          setExtractedFrames([]);
-          // 重置本地化状态
-          setVideoReady(false);
-          setLocalVideoBlob(null);
-          if (localVideoUrl) {
-            URL.revokeObjectURL(localVideoUrl);
-            setLocalVideoUrl(null);
-          }
-        }
-      } else {
-        let errorMsg = `HTTP ${response.status}: ${response.statusText} (来自 Fly.io 云端服务)\n`;
-        if (data.error) {
-          errorMsg += `错误: ${data.error}\n`;
-        }
-        if (data.message) {
-          errorMsg += `消息: ${data.message}\n`;
-        }
-        if (data.logs && data.logs.length > 0) {
-          errorMsg += `\n详细日志:\n${data.logs.join('\n')}`;
-        }
-        setError(errorMsg);
-      }
-    } catch (err: any) {
-      setError(`调用 Fly.io 云端服务时网络错误: ${err.message || '未知错误'}`);
-    } finally {
-      setLoading(false);
+    if (localVideoUrl) {
+      URL.revokeObjectURL(localVideoUrl);
+      setLocalVideoUrl(null);
     }
-  };
-
-  // 新增：提取视频帧（优化版本）
-  const handleExtractFrames = async () => {
-    if (!videoPlayerRef.current || !canvasRef.current) {
-      setError('视频播放器或Canvas未加载');
-      return;
-    }
-
-    if (!videoReady || !localVideoUrl) {
-      setError('请先将视频下载到本地');
-      return;
-    }
-
-    setIsExtractingFrames(true);
-    setIsPreprocessing(true);
-    isPreprocessingRef.current = true;
-    setError('');
-    setExtractedFrames([]); 
-    setPreprocessProgress(0);
-    setExtractionProgress(0);
+    setLocalVideoBlob(null);
     setDurationInfo(null);
 
-    try {
-      // 创建虚拟文件对象用于格式检测和优化
-      const virtualFile = createVirtualFileFromUrl(videoSrc!, downloadResult?.fileName);
-      
-      // 使用高效的配置参数
-      const options: LocalVideoProcessingOptions = {
-        captureInterval: 3, // 3秒间隔，避免过于密集
-        maxScreenshots: 50, // 适中的截图数量
-        file: virtualFile // 传递文件信息用于智能优化
-      };
+    setProcessState(ProcessState.FETCHING_INFO);
+    setCurrentStep(0); // 开始于"获取视频信息"
 
-      const callbacks: LocalVideoProcessingCallbacks = {
-        onProgress: (progress: number) => {
-          if (isPreprocessingRef.current) {
-            setPreprocessProgress(progress);
-            // 当预处理进度达到100%时，切换到提取阶段
-            if (progress >= 100) {
-              setIsPreprocessing(false);
-              isPreprocessingRef.current = false;
-              setExtractionProgress(0);
-            }
-          } else {
-            setExtractionProgress(progress);
-          }
-          if (DEBUG_ENABLED) console.log(`处理进度: ${progress}%`);
-        },
-        onFrameCaptured: (blob: Blob, url: string) => {
-          // 确保预处理状态已结束
-          if (isPreprocessingRef.current) {
-            setIsPreprocessing(false);
-            isPreprocessingRef.current = false;
-          }
-          setExtractedFrames((prevFrames) => [...prevFrames, url]);
-        },
-        onComplete: (screenshots: Blob[]) => {
-          if (DEBUG_ENABLED) console.log('所有帧提取完毕', screenshots);
-          setIsExtractingFrames(false);
-          setIsPreprocessing(false);
-          isPreprocessingRef.current = false;
-          setExtractionProgress(100);
-        },
-        onDurationDetected: (detectedDurationInfo: VideoDurationInfo) => {
-          setDurationInfo(detectedDurationInfo);
-          if (DEBUG_ENABLED) console.log('视频时长检测信息:', detectedDurationInfo);
-        }
-      };
-
-      await processLocalVideo(
-        videoPlayerRef.current,
-        canvasRef.current,
-        options,
-        callbacks
-      );
-    } catch (err: any) {
-      setError(`提取帧失败: ${err.message || '未知错误'}`);
-      setIsExtractingFrames(false);
-      setIsPreprocessing(false);
-      isPreprocessingRef.current = false;
-    }
+    // 注意：后续步骤将由useEffect根据processState驱动
+    // 这里不直接在try/catch中包含所有步骤，而是让useEffect处理每个阶段的异步操作和错误
   };
 
-  // 新增：生成并下载PPT
-  const handleGeneratePpt = async () => {
-    if (extractedFrames.length === 0) {
-      setError('没有提取到帧，无法生成PPT');
+  // 核心useEffect，用于驱动处理流程的各个阶段
+  useEffect(() => {
+    const executeStep = async () => {
+      try {
+        if (processState === ProcessState.FETCHING_INFO) {
+          if (DEBUG_ENABLED) console.log('useEffect: Handling FETCHING_INFO');
+          const info = await withRetry(() => fetchVideoInfo());
+          setVideoInfo(info);
+          setProcessState(ProcessState.DOWNLOADING);
+          setCurrentStep(1); // -> 下载视频
+        } else if (processState === ProcessState.DOWNLOADING) {
+          if (DEBUG_ENABLED) console.log('useEffect: Handling DOWNLOADING');
+          const result = await withRetry(() => downloadVideo());
+          setDownloadResult(result);
+          if (!result.downloadUrl) throw new Error('下载URL无效');
+          setProcessState(ProcessState.LOCALIZING);
+          setCurrentStep(2); // -> 本地化处理
+        } else if (processState === ProcessState.LOCALIZING) {
+          if (DEBUG_ENABLED) console.log('useEffect: Handling LOCALIZING');
+          if (!downloadResult?.downloadUrl) throw new Error('无法本地化：下载结果或URL无效');
+          const blob = await withRetry(() => localizeVideo(downloadResult.downloadUrl!));
+          setLocalVideoBlob(blob);
+          if (localVideoUrl) URL.revokeObjectURL(localVideoUrl);
+          const newLocalUrl = URL.createObjectURL(blob);
+          setLocalVideoUrl(newLocalUrl);
+          setProcessState(ProcessState.LOADING_METADATA);
+          setCurrentStep(3); // -> 加载视频数据
+        } else if (processState === ProcessState.LOADING_METADATA) {
+          if (DEBUG_ENABLED) console.log('useEffect: Handling LOADING_METADATA');
+          if (!localVideoUrl || !videoPlayerRef.current) {
+            throw new Error('视频播放器未准备好加载元数据。');
+          }
+          await new Promise(resolve => setTimeout(resolve, 50)); 
+          if (videoPlayerRef.current.src !== localVideoUrl && DEBUG_ENABLED) {
+             console.warn('videoPlayerRef.current.src does not match localVideoUrl.', {currentSrc: videoPlayerRef.current.src, expectedSrc: localVideoUrl});
+          }
+          await withRetry(() => loadVideoMetadata(videoPlayerRef.current!));
+          setProcessState(ProcessState.PREPROCESSING);
+          setCurrentStep(4); // -> 视频预处理
+        } else if (processState === ProcessState.PREPROCESSING) {
+          if (DEBUG_ENABLED) console.log('useEffect: Handling PREPROCESSING');
+          setProgress(0);
+          await new Promise(resolve => setTimeout(resolve, 500)); 
+          setProcessState(ProcessState.EXTRACTING);
+          setCurrentStep(5); // -> 提取关键帧
+        } else if (processState === ProcessState.EXTRACTING) {
+          if (DEBUG_ENABLED) console.log('useEffect: Handling EXTRACTING');
+          if (!videoPlayerRef.current) throw new Error('视频播放器在提取帧时不可用。');
+          const frames = await withRetry(() => extractFrames());
+          setExtractedFrames(frames);
+          setProcessState(ProcessState.GENERATING_PPT);
+          setCurrentStep(6); // -> 生成PPT
+        } else if (processState === ProcessState.GENERATING_PPT) {
+          if (DEBUG_ENABLED) console.log('useEffect: Handling GENERATING_PPT');
+          if (extractedFrames.length === 0) throw new Error('没有帧可用于生成PPT。');
+          setProgress(0); 
+
+          const frameBlobs = await Promise.all(
+            extractedFrames.map(async (base64String) => {
+              const res = await fetch(base64String);
+              if (!res.ok) throw new Error(`无法获取帧数据: ${res.statusText}`);
+              return res.blob();
+            })
+          );
+          
+          if (DEBUG_ENABLED) console.log(`Converted ${frameBlobs.length} frames to Blobs.`);
+
+          // 确保调用的是 generatePptBlob 并正确解构
+          const result = await withRetry(() => generatePptBlob(frameBlobs));
+          setPptData({ pptBlob: result.pptBlob, fileName: result.fileName }); 
+
+          setProcessState(ProcessState.COMPLETED);
+          setProgress(100);
+          setCurrentStep(steps.length); 
+      }
+      } catch (error: any) {
+        console.error(`处理阶段 ${processState} 失败:`, error);
+        setError(error.message || `在 ${processState} 阶段发生未知错误`);
+        setProcessState(ProcessState.ERROR);
+      }
+    };
+
+    if (processState !== ProcessState.IDLE && 
+        processState !== ProcessState.COMPLETED && 
+        processState !== ProcessState.ERROR) {
+      executeStep();
+    }
+  }, [processState, localVideoUrl, downloadResult]); 
+
+  // Helper to update step names if needed, or adjust currentStep mapping for new LOADING_METADATA
+  // For now, assuming steps array maps well enough or setCurrentStep is managed carefully.
+  // Steps array would be: 0:Info, 1:Download, 2:Localize, 3:LoadMeta, 4:Preproc, 5:Extract, 6:GenPPT
+  // Ensure setCurrentStep uses the correct indices.
+
+  // 重置状态
+  const handleReset = () => {
+    setProcessState(ProcessState.IDLE);
+    setCurrentStep(0);
+    setProgress(0);
+    setError('');
+    setRetryCount(0);
+    setVideoInfo(null);
+    setDownloadResult(null);
+    setExtractedFrames([]);
+    setDurationInfo(null);
+    setPptData({ pptBlob: null, fileName: null });
+    
+    if (localVideoUrl) {
+      URL.revokeObjectURL(localVideoUrl);
+      setLocalVideoUrl(null);
+    }
+    setLocalVideoBlob(null);
+  };
+
+  const isProcessing = processState !== ProcessState.IDLE && processState !== ProcessState.COMPLETED && processState !== ProcessState.ERROR;
+
+  // 辅助函数：触发Blob下载
+  const triggerBlobDownload = (blob: Blob | null, fileName: string | null) => {
+    if (!blob || !fileName) {
+      setError('无法下载：文件数据或文件名缺失。');
       return;
     }
-    setIsGeneratingPpt(true);
-    setError('');
-    try {
-      // 将base64字符串转换为Blob对象
-      const frameBlobs = await Promise.all(
-        extractedFrames.map(async (base64String) => {
-          const res = await fetch(base64String);
-          return res.blob();
-        })
-      );
-      // 假设 createAndDownloadPPT 接受Blob数组作为参数
-      await createAndDownloadPPT(frameBlobs);
-    } catch (err: any) {
-      setError(`生成PPT失败: ${err.message || '未知错误'}`);
-    } finally {
-      setIsGeneratingPpt(false);
-    }
-  };
-
-  // 下载文件到本地
-  const handleDownloadFile = () => {
-    if (downloadResult?.downloadUrl) {
-      const fullUrl = downloadResult.downloadUrl.startsWith('/api/file')
-        ? `${API_BASE_URL}${downloadResult.downloadUrl}`
-        : downloadResult.downloadUrl;
-      window.open(fullUrl, '_blank');
-    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
-    <div className="max-w-5xl mx-auto p-8">
-      <div className="bg-white rounded-xl shadow-lg p-8">
-        <h1 className="text-4xl font-bold text-center mb-8 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-          🎬 云端视频下载工具
-        </h1>
-        
-        <div className="text-center mb-6">
-          <p className="text-gray-600">基于 Fly.io 云服务 • 支持B站、YouTube、抖音等平台</p>
-          <p className="text-sm text-blue-600 mt-1">🌐 {API_BASE_URL}</p>
+    <div className="min-h-screen bg-gray-50">
+      {/* Canvas 保持隐藏 */}
+      <canvas ref={canvasRef} style={{ display: 'none' }}></canvas>
+      
+      {/* 容器用于主要内容区，方便布局视频播放器 */}
+      <div className="container mx-auto px-4 py-12">
+        {/* 标题 */}
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-5xl font-bold mb-3 text-gray-800">视频转PPT</h1>
+          <p className="text-lg text-gray-600">
+            一键智能提取，快速生成专业PPT
+          </p>
         </div>
 
-        <div className="space-y-6">
-          
-          {/* 服务状态检查 */}
-          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-blue-900 font-semibold text-lg">🔧 API服务状态</h3>
+        {/* 主交互卡片区域 */}
+        <div className="max-w-3xl mx-auto">
+          {/* 服务状态指示器 */}
+          <div className={`mb-6 p-4 rounded-lg border ${
+            serviceStatus === 'healthy' 
+              ? 'bg-green-50 border-green-300 text-green-700' 
+              : serviceStatus === 'error' 
+                ? 'bg-red-50 border-red-300 text-red-700' 
+                : 'bg-gray-100 border-gray-300 text-gray-600'
+          }`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className={`w-3 h-3 rounded-full ${
+                  serviceStatus === 'healthy' 
+                    ? 'bg-green-500' 
+                    : serviceStatus === 'error' 
+                      ? 'bg-red-500' 
+                      : 'bg-gray-400'
+                }`}></div>
+                <span className="font-semibold text-sm">
+                  {isCheckingService 
+                    ? '正在检查服务状态...' 
+                    : serviceStatus === 'healthy' 
+                      ? 'Fly.io 云服务正常' 
+                      : serviceStatus === 'error' 
+                        ? 'Fly.io 云服务异常' 
+                        : '未知服务状态'}
+                </span>
+              </div>
               <button
-                onClick={checkHealth}
-                disabled={healthChecking}
-                className={`px-4 py-2 rounded-lg font-medium transition-all ${
-                  healthChecking 
-                    ? 'bg-gray-400 text-white cursor-not-allowed'
-                    : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg'
+                onClick={checkServiceHealth}
+                disabled={isCheckingService}
+                className={`px-3 py-1 border border-gray-300 rounded-md text-sm font-medium transition-colors ${
+                  isCheckingService 
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-white text-gray-700 hover:bg-gray-50'
                 }`}
               >
-                {healthChecking ? '检查中...' : '检查服务状态'}
+                {isCheckingService ? '检查中...' : '重新检查'}
               </button>
             </div>
             
-            {healthInfo && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div className="space-y-2">
-                  <p className="text-green-700 font-medium">✅ 服务正常运行</p>
-                  <p className="text-gray-700">🕒 运行时间: {Math.round(healthInfo.uptime / 60)}分钟</p>
-                  <p className="text-gray-700">🏷️ 版本: {healthInfo.lux_version}</p>
-                  <p className="text-gray-700">💻 平台: {healthInfo.platform} {healthInfo.arch}</p>
-                </div>
-                <div className="space-y-2">
-                  <p className="text-gray-700">🔧 Lux工具: {healthInfo.checks.lux_binary ? '✅' : '❌'}</p>
-                  <p className="text-gray-700">📁 存储目录: {healthInfo.checks.downloads_directory ? '✅' : '❌'}</p>
-                  <p className="text-gray-700">🧠 内存使用: {healthInfo.memory.used}MB / {healthInfo.memory.total}MB</p>
+            {serviceStatus === 'error' && (
+              <div className="mt-3 p-3 bg-white border border-red-200 rounded-md">
+                <h4 className="font-semibold text-sm mb-1 text-red-800">服务异常说明：</h4>
+                <div className="text-xs text-red-700 space-y-1">
+                  <p>• Fly.io 后端服务可能暂时不可用。</p>
+                  <p>• 建议稍后重试或使用其他功能。</p>
+                  <p>• 您也可以尝试 <a href="/local-video" className="text-blue-600 hover:underline font-medium">本地视频处理</a> 功能。</p>
                 </div>
               </div>
             )}
           </div>
 
-          {/* 输入框 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-3">
-              📺 视频链接
+          <div className="bg-white rounded-xl shadow-xl p-6 md:p-8">
+            
+            {/* URL输入区域 - visible unless COMPLETED */}
+            { processState !== ProcessState.COMPLETED && (
+              <div className="mb-6">
+                <label htmlFor="videoUrlInput" className="block text-sm font-medium text-gray-700 mb-2">
+                  视频链接
             </label>
             <div className="relative">
               <input
+                    id="videoUrlInput"
                 type="url"
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
-                placeholder="请输入B站、YouTube、抖音等视频链接..."
-                className="w-full px-4 py-4 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none text-lg pr-20"
-                disabled={loading || infoLoading}
-              />
+                    placeholder="支持B站、YouTube、抖音等常见视频平台..."
+                    className="w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    disabled={processState !== ProcessState.IDLE} // Only enabled when IDLE
+                  />
+                  {videoUrl && (processState === ProcessState.IDLE) && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                      <button
+                        onClick={() => setVideoUrl('')}
+                        className="p-1 text-gray-400 hover:text-gray-600 rounded-full focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        aria-label="清除链接"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* "开始提取" 按钮 - 仅在 IDLE 状态显示 */}
+            { processState === ProcessState.IDLE && (
+              <div className="mt-6 mb-8">
               <button
-                onClick={getVideoInfo}
-                disabled={infoLoading || !videoUrl.trim()}
-                className={`absolute right-2 top-2 bottom-2 px-4 rounded-lg text-sm font-medium transition-all ${
-                  infoLoading || !videoUrl.trim()
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                    : 'bg-green-100 text-green-700 hover:bg-green-200'
+                  onClick={handleStartExtraction}
+                  disabled={!videoUrl.trim() || serviceStatus === 'error'}
+                  className={`w-full py-3 px-6 text-base font-semibold rounded-lg shadow-md transition-all ${
+                    !videoUrl.trim() || serviceStatus === 'error'
+                      ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                      : 'bg-indigo-600 hover:bg-indigo-700 text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500'
                 }`}
               >
-                {infoLoading ? '📊' : '📋 信息'}
+                  <span className="mr-2">🚀</span>
+                  {serviceStatus === 'error' 
+                    ? '服务异常，暂时无法使用' 
+                    : !videoUrl.trim() 
+                      ? '请输入视频链接' 
+                      : '开始一键提取PPT'}
               </button>
             </div>
-          </div>
+            )}
 
-          {/* 视频信息显示 */}
-          {videoInfo && (
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-6">
-              <h3 className="text-green-800 font-semibold text-lg mb-4">
-                📹 视频信息
+            {/* 视频播放器：当 localVideoUrl 有效且 (正在处理中 或 已完成) */}
+            {localVideoUrl && (isProcessing || processState === ProcessState.COMPLETED) && (
+              <div className="mb-6 rounded-lg overflow-hidden shadow-md border border-gray-200">
+                <video 
+                  ref={videoPlayerRef} 
+                  src={localVideoUrl} 
+                  className="w-full h-auto"
+                  controls 
+                  crossOrigin="anonymous" 
+                  preload="metadata"
+                  onLoadedData={() => DEBUG_ENABLED && console.log('Video data loaded via onLoadedData event.')}
+                  onError={(e) => console.error('Video element direct error:', e)}
+                  key={localVideoUrl}
+                >
+                  您的浏览器不支持Video标签。
+                </video>
+          </div>
+            )}
+
+            {/* 处理进度区域 - visible if isProcessing */}
+            {isProcessing && (
+              <div className="mb-6 p-4 md:p-6 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-700 mb-3 text-center">
+                   处理中...
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                {videoInfo.title && (
-                  <div>
-                    <span className="text-gray-600 font-medium">标题:</span>
-                    <p className="text-gray-800 mt-1">{videoInfo.title}</p>
+                
+                {/* 进度条 */}
+                <div className="w-full h-3 bg-gray-200 rounded-full mb-2 overflow-hidden">
+                  <div 
+                    className="h-full bg-indigo-500 transition-all duration-300"
+                    style={{ width: `${progress}%` }}
+                  >
                   </div>
+                </div>
+                <p className="text-center text-xs text-gray-500 mb-3">{progress.toFixed(0)}%</p>
+
+                {/* 当前状态文本 */}
+                <p className="text-center text-sm text-indigo-700 font-medium">
+                  {steps[currentStep]?.icon} {steps[currentStep]?.name}
+                  {retryCount > 1 && (
+                    <span className="ml-2 text-xs text-orange-600 font-normal">(重试 {retryCount}/3)</span>
+                  )}
+                </p>
+
+                {/* 视频信息 (若有) */}
+                {videoInfo && error === '' && (currentStep >=0 && currentStep < 3) && ( // Show during info, download, localize
+                  <div className="mt-4 p-3 bg-white rounded-md border border-gray-200 text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-1">
+                      {videoInfo.title && (
+                        <div><strong>标题:</strong> {videoInfo.title.length > 30 ? videoInfo.title.substring(0,27) + '...' : videoInfo.title}</div>
                 )}
                 {videoInfo.site && (
-                  <div>
-                    <span className="text-gray-600 font-medium">网站:</span>
-                    <p className="text-gray-800 mt-1">{videoInfo.site}</p>
-                  </div>
+                        <div><strong>平台:</strong> {videoInfo.site}</div>
                 )}
                 {videoInfo.duration && (
-                  <div>
-                    <span className="text-gray-600 font-medium">时长:</span>
-                    <p className="text-gray-800 mt-1">{videoInfo.duration}</p>
+                        <div><strong>时长:</strong> {videoInfo.duration}</div>
+                      )}
                   </div>
-                )}
-                {videoInfo.size && (
-                  <div>
-                    <span className="text-gray-600 font-medium">大小:</span>
-                    <p className="text-gray-800 mt-1">{videoInfo.size}</p>
                   </div>
                 )}
               </div>
-              {videoInfo.quality && videoInfo.quality.length > 0 && (
-                <div className="mt-4">
-                  <span className="text-gray-600 font-medium">可用质量:</span>
-                  <div className="flex flex-wrap gap-2 mt-2">
-                    {videoInfo.quality.map((q, index) => (
-                      <span key={index} className="bg-green-100 text-green-800 text-xs px-3 py-1 rounded-full">
-                        {q}
-                      </span>
+            )}
+
+            {/* 提取结果预览 - visible if frames exist and (late processing or completed) */}
+            {extractedFrames.length > 0 && (processState === ProcessState.EXTRACTING || processState === ProcessState.GENERATING_PPT || processState === ProcessState.COMPLETED) && (
+              <div className="mb-6 p-4 md:p-6 bg-gray-50 rounded-lg shadow-sm border border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-700 mb-3">
+                  <span className="mr-2">🖼️</span>
+                  提取结果 ({extractedFrames.length} 帧)
+                </h3>
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-2 max-h-72 overflow-y-auto p-1">
+                  {extractedFrames.map((frame, index) => (
+                    <div key={index} className="relative group">
+                      <img 
+                        src={frame} 
+                        alt={`帧 ${index + 1}`} 
+                        className="w-full h-auto object-cover border border-gray-300 rounded-md shadow-sm transition-transform group-hover:scale-105"
+                      />
+                      <div className="absolute bottom-1 right-1 bg-black bg-opacity-60 text-white text-xs px-1 py-0.5 rounded-sm">
+                        {index + 1}
+                      </div>
+                    </div>
                     ))}
                   </div>
-                </div>
-              )}
             </div>
           )}
 
-          {/* 下载按钮 */}
-          <button
-            onClick={handleDownload}
-            disabled={loading || !videoUrl.trim()}
-            className={`w-full py-4 px-6 rounded-xl font-semibold text-white text-lg transition-all transform ${ 
-              loading || !videoUrl.trim()
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl hover:scale-[1.02]'
-            }`}
-          >
-            {loading ? '⏳ 云端下载中...' : '📥 开始云端下载'}
-          </button>
-
-          {/* 错误提示 */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-6">
+            {/* 错误信息 - visible if ERROR state and error message exists */}
+            {processState === ProcessState.ERROR && error && (
+              <div className="mb-6 p-4 md:p-6 bg-red-50 border border-red-300 rounded-lg text-red-700">
               <div className="flex items-start space-x-3">
-                <span className="text-red-500 text-xl">❌</span>
+                  <span className="text-xl mt-1">❌</span>
                 <div className="flex-1">
-                  <div className="text-red-700 font-medium mb-2">错误信息:</div>
-                  <pre className="text-red-600 text-sm whitespace-pre-wrap font-mono bg-red-100 p-3 rounded-lg overflow-x-auto">
+                    <h3 className="font-semibold text-md mb-1 text-red-800">处理失败</h3>
+                    <pre className="text-xs bg-white p-3 border border-red-200 rounded-md overflow-x-auto text-red-600 whitespace-pre-wrap break-all">
                     {error}
                   </pre>
                 </div>
@@ -550,251 +756,116 @@ export default function VideoDownloadPage() {
             </div>
           )}
 
-          {/* 下载成功结果 */}
-          {downloadResult && (
-            <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 rounded-xl p-6">
-              <h3 className="text-green-800 font-semibold text-lg mb-4">
-                ✅ 云端下载完成！
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
-                <div>
-                  <span className="text-gray-600 font-medium">文件名:</span>
-                  <p className="text-gray-800 mt-1 break-all">{downloadResult.fileName}</p>
-                </div>
-                <div>
-                  <span className="text-gray-600 font-medium">文件大小:</span>
-                  <p className="text-gray-800 mt-1">
-                    {downloadResult.fileSize ? `${Math.round(downloadResult.fileSize / 1024 / 1024)} MB` : '未知'}
-                  </p>
-                </div>
-                {downloadResult.downloadId && (
-                  <div className="md:col-span-2">
-                    <span className="text-gray-600 font-medium">下载ID:</span>
-                    <p className="text-gray-800 mt-1 font-mono text-xs">{downloadResult.downloadId}</p>
-                  </div>
-                )}
-              </div>
-              <button
-                onClick={handleDownloadFile}
-                className="w-full px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-all font-medium shadow-md hover:shadow-lg"
-              >
-                📥 下载文件到本地
-              </button>
-            </div>
-          )}
-
-          {/* 新增：视频播放器、帧提取和PPT生成区域 */}
-          {videoSrc && (
-            <div className="my-8 p-6 bg-gray-50 border border-gray-200 rounded-xl">
-              <h3 className="text-2xl font-semibold text-gray-800 mb-4">🖼️ 视频处理与PPT生成</h3>
-              
-              {/* 隐藏的Canvas元素用于帧提取 */}
-              <canvas ref={canvasRef} style={{ display: 'none' }}></canvas>
-
-              <video 
-                ref={videoPlayerRef} 
-                src={localVideoUrl || videoSrc} 
-                controls 
-                className="w-full rounded-lg shadow-md mb-6"
-                crossOrigin="anonymous"
-                preload="metadata" // 预加载元数据
-                onLoadedMetadata={() => {
-                  if (DEBUG_ENABLED) console.log('视频元数据已加载，时长:', videoPlayerRef.current?.duration);
-                }}
-                onCanPlayThrough={() => {
-                  if (DEBUG_ENABLED) console.log('视频可以流畅播放');
-                }}
-              >
-                您的浏览器不支持Video标签。
-              </video>
-
-              {/* 新增：视频本地化区域 */}
-              {!videoReady && (
-                <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
-                  <h4 className="text-lg font-medium text-yellow-800 mb-3">
-                    🚀 性能优化：将视频下载到本地
-                  </h4>
-                  <p className="text-yellow-700 text-sm mb-4">
-                    为了获得最佳处理速度，建议先将视频完全下载到本地，这样可以避免网络延迟影响帧提取效率。
-                  </p>
-                  
-                  {!isDownloadingVideo ? (
-                    <button
-                      onClick={prepareLocalVideo}
-                      className="w-full py-3 px-6 rounded-xl font-semibold text-white text-lg transition-all bg-gradient-to-r from-orange-500 to-red-600 hover:from-orange-600 hover:to-red-700 shadow-lg hover:shadow-xl"
-                    >
-                      📥 下载视频到本地 (推荐)
-                    </button>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-gradient-to-r from-orange-500 to-red-600 transition-all duration-300 text-center text-xs text-white font-medium leading-4"
-                          style={{ width: `${downloadProgress}%` }}
-                        >
-                          {downloadProgress.toFixed(0)}%
-                        </div>
-                      </div>
-                      <p className="text-center font-medium text-orange-700">
-                        正在下载视频到本地... ({downloadProgress.toFixed(1)}%)
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* 视频就绪提示 */}
-              {videoReady && (
-                <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-green-600 text-lg">✅</span>
-                    <div>
-                      <p className="text-green-800 font-medium">视频已准备就绪</p>
-                      <p className="text-green-700 text-sm">
-                        本地大小: {localVideoBlob ? (localVideoBlob.size / 1024 / 1024).toFixed(2) : '0'}MB，可以开始高速处理
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* 新增：处理参数调整 */}
-              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <h4 className="text-sm font-medium text-blue-800 mb-2">⚙️ 处理参数 (可选调整)</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                  <div>
-                    <label className="text-blue-700">提取间隔: 3秒</label>
-                    <p className="text-blue-600 text-xs">智能采样，提高效率</p>
-                  </div>
-                  <div>
-                    <label className="text-blue-700">最大帧数: 50张</label>
-                    <p className="text-blue-600 text-xs">适中的PPT页数</p>
-                  </div>
-                  <div>
-                    <label className="text-blue-700">处理模式: 增强</label>
-                    <p className="text-blue-600 text-xs">使用智能差异检测</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <button
-                  onClick={handleExtractFrames}
-                  disabled={isExtractingFrames || !videoReady}
-                  className={`w-full py-3 px-6 rounded-xl font-semibold text-white text-lg transition-all ${
-                    isExtractingFrames || !videoReady
-                      ? 'bg-gray-400 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 shadow-lg hover:shadow-xl'
-                  }`}
-                >
-                  {!videoReady 
-                    ? '⚠️ 请先下载视频到本地'
-                    : isExtractingFrames 
-                      ? (isPreprocessing ? `⏳ 预处理中... (${preprocessProgress.toFixed(0)}%)` : `🖼️ 提取帧中... (${extractionProgress.toFixed(0)}%)`)
-                      : '🎞️ 开始高速提取视频帧'}
-                </button>
-
-                {/* 新增：处理中状态显示 */}
-                {isExtractingFrames && (
-                  <div className="space-y-2 my-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                    <div className="w-full h-6 bg-gray-200 rounded-full overflow-hidden border border-blue-300 shadow-inner">
-                      <div 
-                        className="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-300 ease-in-out text-center text-xs text-white font-medium leading-6"
-                        style={{ width: isPreprocessing ? `${preprocessProgress}%` : `${extractionProgress}%` }}
-                      >
-                        {isPreprocessing ? `${preprocessProgress.toFixed(0)}%` : `${extractionProgress.toFixed(0)}%`}
-                      </div>
-                    </div>
-                    <p className="text-center font-medium text-blue-700">
-                      {isPreprocessing 
-                        ? `视频预处理中... (${preprocessProgress.toFixed(0)}%)` 
-                        : `正在提取帧 (${extractionProgress.toFixed(0)}%)...`}
-                    </p>
-                    {durationInfo && (
-                      <p className="text-center text-sm text-blue-600">
-                        视频时长: {durationInfo.duration.toFixed(1)}s (检测方式: {durationInfo.method})
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {extractedFrames.length > 0 && (
-                  <div className="p-4 bg-white border border-gray-200 rounded-xl">
-                    <h4 className="text-lg font-medium text-gray-700 mb-3">🏞️ 提取的帧 ({extractedFrames.length} 帧)</h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 max-h-96 overflow-y-auto p-2 rounded-md bg-gray-100">
-                      {extractedFrames.map((frame, index) => (
-                        <img 
-                          key={index} 
-                          src={frame} 
-                          alt={`帧 ${index + 1}`} 
-                          className="w-full h-auto object-cover rounded shadow-sm border border-gray-300"
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {extractedFrames.length > 0 && (
+            {/* 成功与下载区域 - visible if COMPLETED state */}
+            {processState === ProcessState.COMPLETED && (
+              <div className="mb-6 p-4 md:p-6 bg-green-50 border border-green-300 rounded-lg text-center">
+                <div className="text-5xl mb-3">🎉</div>
+                <h3 className="text-xl font-semibold text-green-800 mb-4">处理完成，PPT已生成！</h3>
+                <div className="grid sm:grid-cols-2 gap-3">
                   <button
-                    onClick={handleGeneratePpt}
-                    disabled={isGeneratingPpt || extractedFrames.length === 0}
-                    className={`w-full py-3 px-6 rounded-xl font-semibold text-white text-lg transition-all ${
-                      isGeneratingPpt || extractedFrames.length === 0
-                        ? 'bg-gray-400 cursor-not-allowed'
-                        : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl'
+                    onClick={() => triggerBlobDownload(localVideoBlob, downloadResult?.fileName || 'downloaded_video.mp4')}
+                    disabled={!localVideoBlob}
+                    className={`w-full py-2.5 px-5 text-sm font-medium rounded-lg shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                      !localVideoBlob
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-sky-600 hover:bg-sky-700 text-white focus:ring-sky-500'
                     }`}
                   >
-                    {isGeneratingPpt ? '⚙️ 生成PPT中...' : '📄 生成并下载PPT'}
+                    <span className="mr-1.5">🎬</span> 下载处理后的视频
                   </button>
-                )}
+                  <button
+                    onClick={() => triggerBlobDownload(pptData.pptBlob, pptData.fileName)}
+                    disabled={!pptData.pptBlob}
+                    className={`w-full py-2.5 px-5 text-sm font-medium rounded-lg shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                      !pptData.pptBlob
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white focus:ring-emerald-500'
+                    }`}
+                  >
+                    <span className="mr-1.5">📄</span> 下载PPT文档
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 操作按钮 - "Reset/Retry" or "Processing..." indicator */}
+            <div className="mt-6 flex flex-col sm:flex-row gap-3">
+              { (processState === ProcessState.COMPLETED || processState === ProcessState.ERROR) && (
+              <button
+                  onClick={handleReset}
+                  className={`w-full py-3 px-6 text-base font-semibold rounded-lg shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                    processState === ProcessState.COMPLETED 
+                      ? 'bg-gray-600 hover:bg-gray-700 text-white focus:ring-gray-500' 
+                      : 'bg-orange-500 hover:bg-orange-600 text-white focus:ring-orange-400' 
+                  }`}
+                >
+                  <span className="mr-2">🔄</span>
+                  {processState === ProcessState.COMPLETED ? '处理新视频' : '清空并重试'}
+              </button>
+          )}
+
+              { isProcessing && ( // This covers the "Processing..." state
+                 <div className="w-full py-3 px-6 text-base font-semibold rounded-lg bg-gray-100 text-gray-500 text-center border border-gray-300">
+                    <span className="mr-2 inline-flex items-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      处理中...
+                    </span>
+                  </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* 特性说明 */}
+        <div className="mt-16 max-w-5xl mx-auto">
+           <h2 className="text-2xl font-semibold text-gray-700 text-center mb-8">产品特性</h2>
+          <div className="grid md:grid-cols-3 gap-6">
+          {/* 当服务异常时，显示备用方案 */}
+          {serviceStatus === 'error' && (
+            <div className="md:col-span-3 mb-6 p-4 bg-yellow-50 border border-yellow-300 rounded-lg">
+              <h3 className="text-lg font-semibold text-yellow-800 mb-3 flex items-center">
+                <span className="mr-2 text-xl">💡</span>
+                后端服务异常：备用解决方案
+              </h3>
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                  <h4 className="font-semibold text-gray-700 mb-1">🎬 本地视频处理</h4>
+                  <p className="text-sm text-gray-600 mb-3">上传本地视频文件，直接在浏览器中处理，保护隐私。</p>
+                  <a 
+                    href="/local-video" 
+                    className="inline-block bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium py-2 px-3 rounded-md transition-colors"
+                  >
+                    立即使用
+                  </a>
+                </div>
+                <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm">
+                  <h4 className="font-semibold text-gray-700 mb-1">📹 实时录屏 (敬请期待)</h4>
+                  <p className="text-sm text-gray-600 mb-3">直接录制屏幕内容，实时生成PPT。</p>
+                  <a 
+                    href="#" // Placeholder for screen-recording page
+                    className="inline-block bg-teal-500 hover:bg-teal-600 text-white text-sm font-medium py-2 px-3 rounded-md transition-colors"
+                  >
+                    敬请期待
+                  </a>
+                </div>
               </div>
             </div>
           )}
 
-          {/* 使用说明 */}
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-6">
-            <h3 className="text-gray-800 font-semibold text-lg mb-4">
-              📖 使用说明
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
-              <div className="space-y-2">
-                <p>• 🎯 支持 B站、YouTube、抖音等主流平台</p>
-                <p>• ☁️ 基于 Fly.io 云端服务，稳定快速</p>
-                <p>• 🔍 可先获取视频信息再决定是否下载</p>
-                <p>• 🚀 本地化处理，提升10倍处理速度</p>
-              </div>
-              <div className="space-y-2">
-                <p>• 🌐 确保网络连接正常</p>
-                <p>• ⏱️ 建议先下载到本地再处理</p>
-                <p>• 💾 本地处理避免网络延迟</p>
-                <p>• 🔐 某些内容可能需要登录权限</p>
-              </div>
-            </div>
-            
-            {/* 新增性能提示 */}
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-              <h4 className="text-blue-800 font-medium mb-2">⚡ 性能优化提示</h4>
-              <div className="text-sm text-blue-700 space-y-1">
-                <p>• 📥 <strong>本地下载</strong>：先下载视频可避免网络延迟，提升处理速度</p>
-                <p>• 🎯 <strong>智能采样</strong>：使用3秒间隔和智能差异检测算法</p>
-                <p>• 🧠 <strong>增强算法</strong>：自动检测视频格式并采用最优处理策略</p>
-                <p>• 💾 <strong>内存优化</strong>：处理完成后自动清理临时文件</p>
-              </div>
-            </div>
-          </div>
-
-          {/* 支持的网站示例 */}
-          <div className="bg-gradient-to-r from-purple-50 to-pink-50 border border-purple-200 rounded-xl p-6">
-            <h3 className="text-purple-800 font-semibold text-lg mb-4">
-              🌍 支持的网站示例
-            </h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-              {['哔哩哔哩', 'YouTube', '抖音', '快手', '微博', '优酷', '腾讯视频', 'Twitter'].map((site) => (
-                <div key={site} className="bg-white p-3 rounded-lg text-center border border-purple-100">
-                  {site}
+          {[
+            { icon: '🚀', title: '一键式操作', desc: '输入视频链接，一键完成所有处理步骤，无需繁琐操作。' },
+            { icon: '🔄', title: '智能重试', desc: '内置自动重试机制，从容应对网络波动，确保处理成功率。' },
+            { icon: '⚡', title: '高速处理', desc: '优化后端服务与前端协同，关键步骤本地化，大幅提升处理速度。' }
+          ].map((feature, index) => (
+            <div key={index} className="bg-white rounded-lg shadow-lg p-6">
+              <div className="text-3xl mb-3">{feature.icon}</div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">{feature.title}</h3>
+              <p className="text-sm text-gray-600">{feature.desc}</p>
                 </div>
               ))}
-            </div>
           </div>
         </div>
       </div>

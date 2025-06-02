@@ -17,40 +17,36 @@ export const blobToBase64 = (blob: Blob): Promise<string> => {
  * 生成时间戳文件名
  * @returns 格式化的时间戳字符串，用于文件名
  */
-export const generateTimestampFileName = (): string => {
+export const generateTimestampFileName = (extension: string = 'pptx'): string => {
   const now = new Date()
   const timestamp = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}${now.getMinutes().toString().padStart(2, '0')}`
-  return `Video2PPT_${timestamp}.pptx`
+  return `Video2PPT_${timestamp}.${extension}`
 }
 
 /**
- * 创建并下载PPT
+ * 生成PPT的Blob数据
  * @param screenshots 截图Blob数组
  * @param maxSlides 最大幻灯片数量限制
- * @returns Promise表示操作完成
+ * @returns Promise包含PPT Blob和建议的文件名
  */
-export const createAndDownloadPPT = async (
+export const generatePptBlob = async (
   screenshots: Blob[],
   maxSlides: number = 256
-): Promise<void> => {
-  if (screenshots.length === 0) return
+): Promise<{ pptBlob: Blob, fileName: string }> => {
+  if (screenshots.length === 0) {
+    throw new Error("无法生成PPT：没有提供截图。");
+  }
   
   try {
     const pptx = new pptxgen()
     
-    // 选择要添加到PPT的截图
     const screenshotsToUse = screenshots.length <= maxSlides 
       ? screenshots 
-      : screenshots.slice(0, maxSlides) // 取前maxSlides张
+      : screenshots.slice(0, maxSlides)
     
-    // 为每张截图创建幻灯片
     for (let i = 0; i < screenshotsToUse.length; i++) {
       const slide = pptx.addSlide()
-      
-      // 将截图转换为base64
       const base64 = await blobToBase64(screenshotsToUse[i])
-      
-      // 添加图片到幻灯片
       slide.addImage({
         data: base64,
         x: 0,
@@ -60,14 +56,16 @@ export const createAndDownloadPPT = async (
       })
     }
     
-    // 生成文件名
-    const fileName = generateTimestampFileName()
+    const fileName = generateTimestampFileName('pptx');
     
-    // 写入并下载文件
-    await pptx.writeFile({ fileName })
+    // 生成PPT的Blob数据
+    const pptBlob = await pptx.write({ outputType: 'blob' }) as Blob;
+    
+    return { pptBlob, fileName };
     
   } catch (error) {
     console.error('PPT生成错误:', error)
-    throw error
+    // 保持抛出错误，以便上层捕获
+    throw error;
   }
 } 

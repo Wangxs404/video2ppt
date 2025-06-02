@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { calculateImageDifference, setupVideoCanvas } from '../utils/videoProcessing'
 import { processLocalVideo, LocalVideoProcessingOptions, LocalVideoProcessingCallbacks } from '../utils/localVideoProcessing'
 import { VideoDurationInfo, detectVideoFormat } from '../utils/videoDurationUtils'
-import { createAndDownloadPPT } from '../utils/pptGeneration'
+import { generatePptBlob } from '../utils/pptGeneration'
 import { isVideoFile, createFileObjectURL, revokeFileObjectURL, formatFileSize } from '../utils/fileHandling'
 
 export default function LocalVideoPage() {
@@ -212,9 +212,22 @@ export default function LocalVideoPage() {
     setIsProcessing(true)
     
     try {
-      await createAndDownloadPPT(screenshots)
+      // 调用新的函数并获取Blob和文件名
+      const { pptBlob, fileName } = await generatePptBlob(screenshots)
+      // 手动触发下载 (后续会添加triggerBlobDownload辅助函数)
+      if (pptBlob && fileName) {
+        const url = URL.createObjectURL(pptBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
     } catch (error) {
-      console.error('PPT生成错误:', error)
+      console.error('PPT生成或下载错误:', error)
+      // 可以考虑在这里设置一个错误状态给用户反馈
     } finally {
       setIsProcessing(false)
     }
