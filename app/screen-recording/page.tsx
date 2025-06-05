@@ -95,13 +95,11 @@ export default function ScreenRecordingPage() {
       const displayMediaOptions = {
         video: {
           cursor: "always",
-          displaySurface: "monitor", // 优先显示器/屏幕选项
-          logicalSurface: true,
           width: { ideal: 1920 },
           height: { ideal: 1080 }
         } as any,
         audio: true, // 始终录制系统音频
-        preferCurrentTab: false // 明确不偏好当前标签页
+        selfBrowserSurface: "include" // 允许录制当前标签页
       };
       
       const stream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
