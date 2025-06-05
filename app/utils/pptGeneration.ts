@@ -68,4 +68,37 @@ export const generatePptBlob = async (
     // 保持抛出错误，以便上层捕获
     throw error;
   }
+}
+
+/**
+ * 创建PPT并自动下载
+ * @param screenshots 截图Blob数组
+ * @param maxSlides 最大幻灯片数量限制，默认256
+ */
+export const createAndDownloadPPT = async (
+  screenshots: Blob[],
+  maxSlides: number = 256
+): Promise<void> => {
+  try {
+    const { pptBlob, fileName } = await generatePptBlob(screenshots, maxSlides)
+    
+    // 创建下载链接
+    const url = URL.createObjectURL(pptBlob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    link.style.display = 'none'
+    
+    // 触发下载
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    
+    // 清理资源
+    URL.revokeObjectURL(url)
+    
+  } catch (error) {
+    console.error('创建并下载PPT失败:', error)
+    throw error
+  }
 } 
