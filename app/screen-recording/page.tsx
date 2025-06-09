@@ -16,9 +16,6 @@ export default function ScreenRecordingPage() {
   // 录制状态
   const [recordingState, setRecordingState] = useState<'idle' | 'ready' | 'recording' | 'paused' | 'processing' | 'converting'>('idle')
   const [recordingTime, setRecordingTime] = useState<number>(0)
-  const [recordingOptions, setRecordingOptions] = useState({
-    withAudio: false,
-  })
   
   // 视频录制相关
   const [mediaStream, setMediaStream] = useState<MediaStream | null>(null)
@@ -48,14 +45,6 @@ export default function ScreenRecordingPage() {
   const lastScreenshotTimeRef = useRef<number>(0)
   const lastImageDataRef = useRef<ImageData | null>(null)
   const diffThreshold = 30 // 图像差异阈值
-
-  // 切换音频选项
-  const handleToggleAudio = () => {
-    setRecordingOptions({
-      ...recordingOptions,
-      withAudio: !recordingOptions.withAudio,
-    })
-  }
 
   // 截图函数
   const captureScreenshot = () => {
@@ -91,19 +80,18 @@ export default function ScreenRecordingPage() {
   // 开始录制准备
   const handleStartPrepare = async () => {
     try {
-      // 请求屏幕共享，始终包含系统音频
+      // 请求屏幕共享，包含系统音频
       const displayMediaOptions = {
         video: {
           cursor: "always",
           width: { ideal: 1920 },
           height: { ideal: 1080 }
         } as any,
-        audio: true, // 始终录制系统音频
+        audio: true, // 录制系统音频
         selfBrowserSurface: "include" // 允许录制当前标签页
       };
       
       const stream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);
-      let finalStream = stream;
       
       console.log('屏幕捕获 - 音频轨道数量:', stream.getAudioTracks().length, '视频轨道数量:', stream.getVideoTracks().length);
       
@@ -118,152 +106,10 @@ export default function ScreenRecordingPage() {
         });
       }
       
-      // 如果用户选择包含麦克风音频，则额外捕获并合并
-      if (recordingOptions.withAudio) {
-        try {
-          // 获取麦克风音频 - 明确请求用户麦克风
-          const constraints = {
-            audio: {
-              echoCancellation: true,
-              noiseSuppression: true,
-              autoGainControl: true,
-              channelCount: 2,
-              deviceId: undefined // 让用户选择设备
-            }
-          };
-          
-          console.log('请求麦克风权限，使用约束:', constraints);
-          const micStream = await navigator.mediaDevices.getUserMedia(constraints);
-          
-          console.log('麦克风捕获 - 音频轨道数量:', micStream.getAudioTracks().length);
-          
-          if (micStream.getAudioTracks().length > 0) {
-            micStream.getAudioTracks().forEach(track => {
-              console.log('麦克风轨道信息:', {
-                id: track.id,
-                label: track.label,
-                enabled: track.enabled,
-                muted: track.muted,
-                readyState: track.readyState
-              });
-              
-              // 确保麦克风轨道被启用
-              track.enabled = true;
-            });
-          }
-          
-          // 提取所有轨道
-          const videoTracks = stream.getVideoTracks();
-          const systemAudioTracks = stream.getAudioTracks(); // 系统音频轨道
-          const micAudioTracks = micStream.getAudioTracks(); // 麦克风音频轨道
-          
-          if (micAudioTracks.length > 0) {
-            try {
-              // 使用Web Audio API混合音频
-              const audioContext = new AudioContext();
-              
-              // 创建新的目标节点
-              const destination = audioContext.createMediaStreamDestination();
-              
-              // 处理系统音频
-              if (systemAudioTracks.length > 0) {
-                const systemSource = audioContext.createMediaStreamSource(new MediaStream([systemAudioTracks[0]]));
-                systemSource.connect(destination);
-                console.log('已连接系统音频到混合器');
-              }
-              
-              // 处理麦克风音频 - 增加音量
-              if (micAudioTracks.length > 0) {
-                const micSource = audioContext.createMediaStreamSource(new MediaStream([micAudioTracks[0]]));
-                const micGain = audioContext.createGain();
-                micGain.gain.value = 1.5; // 增加麦克风音量
-                micSource.connect(micGain);
-                micGain.connect(destination);
-                console.log('已连接麦克风音频到混合器，增益值:', micGain.gain.value);
-              }
-              
-              // 创建包含所有轨道的新流（视频 + 混合音频）
-              const mixedAudioTracks = destination.stream.getAudioTracks();
-              console.log('混合后的音轨数量:', mixedAudioTracks.length);
-              
-              if (mixedAudioTracks.length > 0) {
-                const combinedStream = new MediaStream([
-                  ...videoTracks,
-                  ...mixedAudioTracks
-                ]);
-                
-                finalStream = combinedStream;
-                setMediaStream(combinedStream);
-                
-                if (videoRef.current) {
-                  videoRef.current.srcObject = combinedStream;
-                  videoRef.current.muted = true; // 避免回声，不影响录制
-                }
-                
-                console.log('使用Web Audio API混合后的流 - 视频轨道:', videoTracks.length, 
-                            '混合音轨:', mixedAudioTracks.length);
-              } else {
-                // 如果混合失败，则回退到简单合并
-                console.warn('Web Audio API混合失败，回退到简单合并轨道');
-                const fallbackStream = new MediaStream([
-                  ...videoTracks,
-                  ...systemAudioTracks,
-                  ...micAudioTracks
-                ]);
-                
-                finalStream = fallbackStream;
-                setMediaStream(fallbackStream);
-                
-                if (videoRef.current) {
-                  videoRef.current.srcObject = fallbackStream;
-                  videoRef.current.muted = true;
-                }
-                
-                console.log('合并后的流 - 视频轨道:', videoTracks.length, 
-                          '系统音频轨道:', systemAudioTracks.length, 
-                          '麦克风轨道:', micAudioTracks.length);
-              }
-            } catch (mixError) {
-              console.error('混合音频时出错，回退到简单合并:', mixError);
-              
-              // 回退到简单合并轨道
-              const fallbackStream = new MediaStream([
-                ...videoTracks,
-                ...systemAudioTracks,
-                ...micAudioTracks
-              ]);
-              
-              finalStream = fallbackStream;
-              setMediaStream(fallbackStream);
-              
-              if (videoRef.current) {
-                videoRef.current.srcObject = fallbackStream;
-                videoRef.current.muted = true;
-              }
-            }
-          } else {
-            console.warn('未获取到麦克风轨道，只使用系统音频');
-            setMediaStream(stream);
-            if (videoRef.current) {
-              videoRef.current.srcObject = stream;
-              videoRef.current.muted = true;
-            }
-          }
-        } catch (audioErr) {
-          console.error('无法获取麦克风访问权限，只使用系统音频:', audioErr);
-          setMediaStream(stream);
-          if (videoRef.current) {
-            videoRef.current.srcObject = stream;
-            videoRef.current.muted = true;
-          }
-        }
-      } else {
-        console.log('用户选择不使用麦克风，只录制系统音频');
-        setMediaStream(stream);
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.muted = true;
-        }
+      setMediaStream(stream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.muted = true; // 避免回声，不影响录制
       }
       
       // 重置截图数组、索引和最后一帧图像数据
@@ -275,8 +121,8 @@ export default function ScreenRecordingPage() {
       });
       lastScreenshotTimeRef.current = Date.now();
       
-      // 获取到媒体流后，传递最终流给录制函数
-      handleStartRecording(finalStream);
+      // 开始录制
+      handleStartRecording(stream);
     } catch (err) {
       console.error('无法获取屏幕共享权限:', err);
       // 根据错误类型提供更具体的指导
@@ -307,7 +153,7 @@ export default function ScreenRecordingPage() {
       lastScreenshotTimeRef,
       captureScreenshot,
       onRecordingStateChange: setRecordingState,
-      onError: (error) => alert(error.message)
+      onError: (error: Error) => alert(error.message)
     })
   }
 
@@ -447,8 +293,6 @@ export default function ScreenRecordingPage() {
     
     try {
       setIsConverting(true)
-      // 不再改变整体录制状态，只改变按钮状态
-      // setRecordingState('converting')
       setConversionProgress(0)
       
       // 转换为MP4
@@ -479,8 +323,6 @@ export default function ScreenRecordingPage() {
       alert('转换为MP4格式失败，请重试或选择WebM格式下载')
     } finally {
       setIsConverting(false)
-      // 不需要再设置状态，因为之前就没有改变
-      // setRecordingState('idle')
     }
   }
   
@@ -571,7 +413,7 @@ export default function ScreenRecordingPage() {
           <div className="card bg-light">
             <h2 className="text-2xl font-bold mb-4">屏幕录制</h2>
             <p className="mb-6">
-              点击开始录制后，请选择"整个屏幕"选项开始录制。
+              点击开始录制后，请选择"整个屏幕"选项开始录制。系统将自动录制屏幕画面和系统音频。
             </p>
             
             {/* 录制预览区域 */}
@@ -616,24 +458,6 @@ export default function ScreenRecordingPage() {
                 </div>
               )}
             </div>
-            
-            {/* 录制选项 - 麦克风开关控制 */}
-            <div className="flex justify-start mb-4">
-              <div className="flex items-center">
-                <label className="inline-flex items-center cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    checked={recordingOptions.withAudio} 
-                    onChange={handleToggleAudio}
-                    disabled={recordingState !== 'idle' && recordingState !== 'ready'}
-                    className="sr-only peer" 
-                  />
-                  <div className={`w-11 h-6 bg-gray-200 border-3 border-black peer-focus:outline-none peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[0px] after:left-[0px] after:bg-white after:border-3 after:border-black after:h-5 after:w-5 after:transition-all peer-checked:bg-accent relative ${recordingState !== 'idle' && recordingState !== 'ready' ? 'opacity-70' : ''}`}></div>
-                  <span className="ml-3 font-bold">同时录制麦克风</span>
-                </label>
-              </div>
-            </div>
-            
             
             {/* 录制控制按钮 */}
             <div className="flex flex-wrap gap-4">
@@ -824,7 +648,7 @@ export default function ScreenRecordingPage() {
             </div>
             <div className="flex items-start">
               <div className="bg-secondary w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
-              <p><strong>音频捕获</strong> - 始终录制系统音频，可选择是否包含麦克风声音</p>
+              <p><strong>系统音频</strong> - 自动录制系统音频，包括应用程序声音和媒体播放</p>
             </div>
             <div className="flex items-start">
               <div className="bg-accent text-light w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
