@@ -33,12 +33,115 @@ export default function Home() {
               </div>
             </div>
             <div className="relative">
-              <div className="aspect-video bg-white border-3 border-black shadow-brutal-lg overflow-hidden">
-                <img 
-                  src="/hero.png" 
-                  alt={t('heroAlt')} 
-                  className="w-full h-full object-cover"
-                />
+              <div className="aspect-video bg-white border-3 border-black shadow-brutal-lg overflow-hidden relative">
+                {/* Custom SVG Hero Illustration */}
+                <svg 
+                  viewBox="0 0 800 450" 
+                  className="w-full h-full"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  {/* Background */}
+                  <rect width="800" height="450" fill="#f8f9fa"/>
+                  
+                  {/* Decorative Background Elements */}
+                  <circle cx="700" cy="80" r="40" fill="#ff6b35" stroke="#000" strokeWidth="3"/>
+                  <rect x="50" y="350" width="60" height="60" fill="#4ecdc4" stroke="#000" strokeWidth="3" transform="rotate(15 80 380)"/>
+                  <polygon points="150,50 180,20 210,50 180,80" fill="#ffe66d" stroke="#000" strokeWidth="3"/>
+                  
+                  {/* Left Side - Video Player */}
+                  <g transform="translate(80, 120)">
+                    {/* Video Player Frame */}
+                    <rect x="0" y="0" width="280" height="210" fill="#000" stroke="#000" strokeWidth="4" rx="8"/>
+                    <rect x="8" y="8" width="264" height="154" fill="#1a1a1a" stroke="#000" strokeWidth="2"/>
+                    
+                    {/* Video Screen */}
+                    <rect x="20" y="20" width="240" height="130" fill="#2d3436" stroke="#000" strokeWidth="2"/>
+                    
+                    {/* Play Button */}
+                    <circle cx="140" cy="85" r="25" fill="#ff6b35" stroke="#000" strokeWidth="3"/>
+                    <polygon points="130,75 130,95 155,85" fill="#fff" stroke="#000" strokeWidth="2"/>
+                    
+                    {/* Video Progress Bar */}
+                    <rect x="30" y="160" width="220" height="8" fill="#636e72" stroke="#000" strokeWidth="2" rx="4"/>
+                    <rect x="30" y="160" width="120" height="8" fill="#ff6b35" stroke="#000" strokeWidth="2" rx="4"/>
+                    
+                    {/* Control Buttons */}
+                    <rect x="20" y="180" width="30" height="20" fill="#4ecdc4" stroke="#000" strokeWidth="2" rx="4"/>
+                    <rect x="60" y="180" width="30" height="20" fill="#4ecdc4" stroke="#000" strokeWidth="2" rx="4"/>
+                    <rect x="100" y="180" width="30" height="20" fill="#4ecdc4" stroke="#000" strokeWidth="2" rx="4"/>
+                    
+                    {/* Video Icon */}
+                    <text x="140" y="35" textAnchor="middle" fontSize="12" fontWeight="bold" fill="#ff6b35">VIDEO</text>
+                  </g>
+                  
+                  {/* Center - Conversion Arrow */}
+                  <g transform="translate(400, 180)">
+                    {/* Arrow Background */}
+                    <circle cx="0" cy="45" r="50" fill="#ffe66d" stroke="#000" strokeWidth="4"/>
+                    
+                    {/* Arrow Shape */}
+                    <path d="M-20,35 L20,35 L20,25 L35,45 L20,65 L20,55 L-20,55 Z" 
+                          fill="#000" stroke="#000" strokeWidth="2"/>
+                    
+                    {/* Conversion Text */}
+                    <text x="0" y="20" textAnchor="middle" fontSize="10" fontWeight="bold" fill="#000">AI</text>
+                    <text x="0" y="75" textAnchor="middle" fontSize="8" fontWeight="bold" fill="#000">CONVERT</text>
+                  </g>
+                  
+                  {/* Right Side - PPT Slides */}
+                  <g transform="translate(500, 90)">
+                    {/* Main PPT Slide */}
+                    <rect x="0" y="0" width="220" height="140" fill="#fff" stroke="#000" strokeWidth="4" rx="8"/>
+                    
+                    {/* Slide Content */}
+                    <rect x="15" y="15" width="190" height="25" fill="#ff6b35" stroke="#000" strokeWidth="2" rx="4"/>
+                    <text x="110" y="32" textAnchor="middle" fontSize="12" fontWeight="bold" fill="#fff">SLIDE TITLE</text>
+                    
+                    {/* Bullet Points */}
+                    <circle cx="25" cy="60" r="3" fill="#000"/>
+                    <rect x="35" y="55" width="150" height="8" fill="#636e72" stroke="#000" strokeWidth="1" rx="2"/>
+                    
+                    <circle cx="25" cy="80" r="3" fill="#000"/>
+                    <rect x="35" y="75" width="120" height="8" fill="#636e72" stroke="#000" strokeWidth="1" rx="2"/>
+                    
+                    <circle cx="25" cy="100" r="3" fill="#000"/>
+                    <rect x="35" y="95" width="170" height="8" fill="#636e72" stroke="#000" strokeWidth="1" rx="2"/>
+                    
+                    {/* Chart/Graph */}
+                    <rect x="15" y="110" width="60" height="20" fill="#4ecdc4" stroke="#000" strokeWidth="2"/>
+                    <text x="45" y="123" textAnchor="middle" fontSize="8" fontWeight="bold" fill="#000">CHART</text>
+                    
+                    {/* Background Slides Stack */}
+                    <rect x="10" y="-5" width="220" height="140" fill="#f8f9fa" stroke="#000" strokeWidth="3" rx="8" opacity="0.7"/>
+                    <rect x="5" y="-10" width="220" height="140" fill="#ddd" stroke="#000" strokeWidth="3" rx="8" opacity="0.5"/>
+                    
+                    {/* PPT Icon */}
+                    <text x="110" y="165" textAnchor="middle" fontSize="12" fontWeight="bold" fill="#ff6b35">POWERPOINT</text>
+                  </g>
+                  
+                  {/* Floating Elements */}
+                  <g transform="translate(200, 50)">
+                    <polygon points="0,0 20,10 0,20 -10,10" fill="#4ecdc4" stroke="#000" strokeWidth="2" transform="rotate(45)"/>
+                  </g>
+                  
+                  <g transform="translate(600, 320)">
+                    <rect x="0" y="0" width="25" height="25" fill="#ffe66d" stroke="#000" strokeWidth="2" transform="rotate(30)"/>
+                  </g>
+                  
+                  <g transform="translate(150, 320)">
+                    <circle cx="0" cy="0" r="15" fill="#ff6b35" stroke="#000" strokeWidth="3"/>
+                  </g>
+                  
+                  {/* Text Elements */}
+                  <text x="400" y="380" textAnchor="middle" fontSize="16" fontWeight="black" fill="#000">
+                    INTELLIGENT CONVERSION
+                  </text>
+                  
+                  <text x="400" y="400" textAnchor="middle" fontSize="12" fontWeight="bold" fill="#636e72">
+                    From Video to Professional Presentations
+                  </text>
+                </svg>
+                
                 <div className="absolute top-4 right-4 bg-accent text-light px-3 py-1 border-3 border-black transform rotate-3">
                   {t('efficientConversion')}
                 </div>
