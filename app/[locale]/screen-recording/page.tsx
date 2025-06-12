@@ -2,17 +2,20 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { calculateImageDifference, captureAndFilterScreenshot, updateCanvasWithScreenshot, convertWebmToMp4 } from '../utils/videoProcessing'
-import { createAndDownloadPPT } from '../utils/pptGeneration'
-import { formatTime, startRecording } from '../utils/screenRecording'
+import { useTranslations } from 'next-intl'
+import { calculateImageDifference, captureAndFilterScreenshot, updateCanvasWithScreenshot, convertWebmToMp4 } from '../../utils/videoProcessing'
+import { createAndDownloadPPT } from '../../utils/pptGeneration'
+import { formatTime, startRecording } from '../../utils/screenRecording'
 import { 
   navigateToPreviousScreenshot, 
   navigateToNextScreenshot, 
   navigateToLatestScreenshot,
   resetScreenshotNavigation
-} from '../utils/screenshotNavigation'
+} from '../../utils/screenshotNavigation'
 
 export default function ScreenRecordingPage() {
+  const t = useTranslations('ScreenRecording')
+  
   // 录制状态
   const [recordingState, setRecordingState] = useState<'idle' | 'ready' | 'recording' | 'paused' | 'processing' | 'converting'>('idle')
   const [recordingTime, setRecordingTime] = useState<number>(0)
@@ -405,15 +408,14 @@ export default function ScreenRecordingPage() {
     <main className="container mx-auto px-4 py-10">
       <div className="max-w-7xl mx-auto">
         <h1 className="text-4xl font-black mb-8">
-          <span className=" bg-secondary text-black px-3 py-1 border-3 border-black inline-block transform rotate-1">实时录屏</span>
-          <span className="text-2xl ml-3">转PPT</span>
+          <span className=" bg-secondary text-black px-3 py-1 border-3 border-black inline-block transform rotate-1">{t('title')}</span>
         </h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           <div className="card bg-light">
-            <h2 className="text-2xl font-bold mb-4">屏幕录制</h2>
+            <h2 className="text-2xl font-bold mb-4">{t('screenRecording')}</h2>
             <p className="mb-6">
-              点击开始录制后，请选择"整个屏幕"选项开始录制。系统将自动录制屏幕画面和系统音频。
+              {t('description')}
             </p>
             
             {/* 录制预览区域 */}
@@ -432,8 +434,8 @@ export default function ScreenRecordingPage() {
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
                   </svg>
-                  <p className="text-xl font-bold">准备开始全屏录制</p>
-                  <p className="text-gray-400 mt-2">点击开始录制后，请在弹窗中选择"整个屏幕"</p>
+                  <p className="text-xl font-bold">{t('readyToRecord')}</p>
+                  <p className="text-gray-400 mt-2">{t('selectFullScreen')}</p>
                 </div>
               ) : recordingState === 'recording' || recordingState === 'paused' ? (
                 <div className="absolute top-4 right-4 flex items-center space-x-2">
@@ -454,7 +456,7 @@ export default function ScreenRecordingPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
-                  <span>处理中...</span>
+                  <span>{t('processing')}</span>
                 </div>
               )}
             </div>
@@ -466,7 +468,7 @@ export default function ScreenRecordingPage() {
                   onClick={handleStartPrepare}
                   className="btn bg-primary text-light flex-1"
                 >
-                  开始录制
+                  {t('startRecording')}
                 </button>
               )}
               
@@ -476,13 +478,13 @@ export default function ScreenRecordingPage() {
                     onClick={handlePauseRecording}
                     className="btn bg-primary text-light flex-1"
                   >
-                    {recordingState === 'recording' ? '暂停' : '继续'}
+                    {recordingState === 'recording' ? t('pause') : t('continue')}
                   </button>
                   <button 
                     onClick={handleStopRecording}
                     className="btn bg-accent text-light flex-1"
                   >
-                    结束录制
+                    {t('stopRecording')}
                   </button>
                 </>
               )}
@@ -495,7 +497,7 @@ export default function ScreenRecordingPage() {
                         onClick={handleDownloadWebM}
                         className="btn bg-accent text-light w-1/2"
                       >
-                        下载 WebM (快速)
+                        {t('downloadWebM')}
                       </button>
                       <button 
                         onClick={handleConvertToMp4}
@@ -509,13 +511,13 @@ export default function ScreenRecordingPage() {
                                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                               </svg>
-                              转换格式中... 
+                              {t('converting')}
                             </span>
                             {/* 进度条 */}
                             <div className="absolute bottom-0 left-0 h-1 bg-primary" style={{ width: `${conversionProgress}%` }}></div>
                           </>
                         ) : (
-                          "下载 MP4 (高质量)"
+                          t('downloadMP4')
                         )}
                       </button>
                     </div>
@@ -535,7 +537,7 @@ export default function ScreenRecordingPage() {
                       className="btn bg-light w-full"
                       disabled={isConverting}
                     >
-                      重新录制
+                      {t('reRecord')}
                     </button>
                   </div>
                 </>
@@ -548,7 +550,7 @@ export default function ScreenRecordingPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    <span className="font-bold">处理中，请稍候...</span>
+                    <span className="font-bold">{t('processingPlease')}</span>
                   </div>
                 </div>
               )}
@@ -557,9 +559,9 @@ export default function ScreenRecordingPage() {
 
           {/* PPT预览区域 */}
           <div className="card bg-light">
-            <h2 className="text-2xl font-bold mb-4">PPT预览</h2>
+            <h2 className="text-2xl font-bold mb-4">{t('pptPreview')}</h2>
             <p className="mb-6">
-              查看从录制视频中自动生成的PPT幻灯片，可以翻阅页面或回到最新内容。
+              {t('pptDescription')}
             </p>
             
             {/* PPT预览画布区域 */}
@@ -575,8 +577,8 @@ export default function ScreenRecordingPage() {
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
-                  <p className="text-xl font-bold">尚未生成PPT</p>
-                  <p className="text-gray-400 mt-2">录制并处理视频后查看幻灯片</p>
+                  <p className="text-xl font-bold">{t('noPptGenerated')}</p>
+                  <p className="text-gray-400 mt-2">{t('recordToView')}</p>
                 </div>
               )}
             </div>
@@ -591,12 +593,12 @@ export default function ScreenRecordingPage() {
                     className="sr-only peer" 
                   />
                   <div className="w-11 h-6 bg-gray-200 border-3 border-black peer-focus:outline-none peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[0px] after:left-[0px] after:bg-white after:border-3 after:border-black after:h-5 after:w-5 after:transition-all peer-checked:bg-accent relative"></div>
-                  <span className="ml-3 font-bold">自动提取</span>
+                  <span className="ml-3 font-bold">{t('autoExtract')}</span>
                 </label>
               </div>
               
               <div className="font-bold">
-                当前页: <span>{currentScreenshotIndex + 1}</span> / <span>{screenshots.length}</span>
+                {t('currentPage')}: <span>{currentScreenshotIndex + 1}</span> / <span>{screenshots.length}</span>
               </div>
             </div>
             
@@ -607,14 +609,14 @@ export default function ScreenRecordingPage() {
                 disabled={currentScreenshotIndex <= 0 || screenshots.length === 0}
                 className={`btn flex-1 ${currentScreenshotIndex <= 0 || screenshots.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-primary text-light'}`}
               >
-                上一页
+                {t('previousPage')}
               </button>
               <button 
                 onClick={handleNextScreenshot}
                 disabled={currentScreenshotIndex >= screenshots.length - 1 || screenshots.length === 0}
                 className={`btn flex-1 ${currentScreenshotIndex >= screenshots.length - 1 || screenshots.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-accent text-light'}`}
               >
-                下一页
+                {t('nextPage')}
               </button>
               
               {/* 录制过程中显示回到最新按钮，录制结束后显示下载PPT按钮 */}
@@ -624,7 +626,7 @@ export default function ScreenRecordingPage() {
                   disabled={currentScreenshotIndex >= screenshots.length - 1 || screenshots.length === 0}
                   className={`btn flex-1 ${currentScreenshotIndex >= screenshots.length - 1 || screenshots.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-light'}`}
                 >
-                  回到最新
+                  {t('backToLatest')}
                 </button>
               ) : (
                 <button 
@@ -632,7 +634,7 @@ export default function ScreenRecordingPage() {
                   disabled={screenshots.length === 0}
                   className={`btn flex-1 ${screenshots.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-accent text-light'}`}
                 >
-                  下载PPT
+                  {t('downloadPPT')}
                 </button>
               )}
             </div>
@@ -640,23 +642,23 @@ export default function ScreenRecordingPage() {
         </div>
 
         <div className="card bg-light mt-8">
-          <h2 className="text-2xl font-bold mb-4">屏幕录制功能说明</h2>
+          <h2 className="text-2xl font-bold mb-4">{t('features.title')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="flex items-start">
               <div className="bg-primary text-light w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
-              <p><strong>全屏录制</strong> - 录制整个屏幕内容，捕获所有应用和桌面活动</p>
+              <p>{t('features.fullScreen')}</p>
             </div>
             <div className="flex items-start">
               <div className="bg-secondary w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
-              <p><strong>系统音频</strong> - 自动录制系统音频，包括应用程序声音和媒体播放</p>
+              <p>{t('features.systemAudio')}</p>
             </div>
             <div className="flex items-start">
               <div className="bg-accent text-light w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
-              <p><strong>录制控制</strong> - 提供暂停/继续功能，灵活控制录制过程</p>
+              <p>{t('features.recordControl')}</p>
             </div>
             <div className="flex items-start">
               <div className="bg-primary text-light w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
-              <p><strong>多格式下载</strong> - 支持WebM(快速)和MP4(高质量)两种视频格式</p>
+              <p>{t('features.multiFormat')}</p>
             </div>
           </div>
         </div>

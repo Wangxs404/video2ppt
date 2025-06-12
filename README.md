@@ -1,98 +1,253 @@
-# Video2PPT - 知识的快照，智慧的永存
+# Video2PPT - Knowledge Snapshots, Wisdom Preserved
 
-Video2PPT是一个免费的在线工具，可以将任意来源的视频转换为PPT演示文稿。无论是本地视频文件、在线视频链接还是实时录屏，我们都能帮您提取关键信息，生成精美的PPT文档。
+> 🇺🇸 English | [🇨🇳 中文](README_zh.md)
 
-在线体验地址：[video2ppt.com](https://video2ppt.com)
+![License](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)
+![Next.js](https://img.shields.io/badge/Next.js-14.1.0-black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5.2.2-blue)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.3.3-38B2AC)
 
-## 项目特点
+A free, privacy-focused online tool that converts videos from any source into PowerPoint presentations. Extract key insights from local video files, online video links, or live screen recordings to generate beautiful PPT documents.
 
-- **多源支持**: 支持本地视频文件、在线视频链接或实时录屏
-- **实时提取**: 边看视频边生成PPT，适合网络会议、研讨会、在线课程等多种场景
-- **隐私安全**: 所有处理均在本地完成，不会上传视频内容，保证数据隐私和安全
-- **完全免费**: 所有功能免费使用，无广告干扰
-- **智能总结**: 自动提取视频中的关键信息点，生成结构化的PPT内容
+🌐 **Live Demo**: [video2ppt.com](https://video2ppt.com)
 
-## 技术栈
+## ✨ Features
 
-- Next.js 14
-- TypeScript
-- Tailwind CSS
-- Shadcn UI 组件
-- Neo-brutalism 设计风格
+- **🎥 Multi-Source Support**: Process local video files, online video URLs, or live screen recordings
+- **⚡ Real-Time Processing**: Generate PPT slides while watching videos - perfect for meetings, webinars, and online courses
+- **🔒 Privacy First**: All processing happens locally in your browser - no video uploads, complete data privacy
+- **🆓 Completely Free**: Full functionality with no ads or premium tiers
+- **🤖 AI-Powered**: Intelligent content extraction and structured PPT generation
+- **🌍 Multilingual**: Support for English and Chinese interfaces
+- **📱 Responsive Design**: Works seamlessly across desktop, tablet, and mobile devices
 
-## 快速开始
+## 🚀 Quick Start
 
-安装依赖:
+### Prerequisites
 
-```bash
-npm install
-# 或
-yarn install
-# 或
-pnpm install
+- Node.js 18+ 
+- npm, yarn, or pnpm
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/AxisIndie/video2ppt.git
+   cd video2ppt
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   # or
+   yarn install
+   # or
+   pnpm install
+   ```
+
+3. **Start development server**
+   ```bash
+   npm run dev
+   # or
+   yarn dev
+   # or
+   pnpm dev
+   ```
+
+4. **Open your browser**
+   
+   Navigate to [http://localhost:3000](http://localhost:3000)
+
+## 🏗️ Tech Stack
+
+### Frontend
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **Components**: Shadcn UI, Radix UI
+- **Design**: Neo-brutalism style
+- **Animations**: Framer Motion
+- **Internationalization**: next-intl
+
+### Core Libraries
+- **Video Processing**: FFmpeg.wasm
+- **PPT Generation**: PptxGenJS
+- **File Handling**: File-saver, JSZip
+- **WebSocket**: ws
+
+### Development Tools
+- **Linting**: ESLint
+- **Package Manager**: pnpm
+- **Build Tool**: Next.js built-in
+
+## 📖 Usage
+
+### 1. Local Video Processing
+- Upload video files from your device
+- Supports common formats (MP4, AVI, MOV, etc.)
+- Process and extract key frames and content
+
+### 2. Online Video Processing
+- Paste video URLs from popular platforms
+- Automatic content extraction and analysis
+- Generate structured presentations
+
+### 3. Screen Recording
+- Real-time screen capture
+- Live PPT generation during recording
+- Perfect for live presentations and tutorials
+
+## 🎯 Use Cases
+
+- **📹 Meeting Documentation**: Extract key points from recorded meetings for easy sharing
+- **📚 Educational Content**: Transform lengthy educational videos into concise study materials
+- **🎓 Conference Notes**: Capture expert insights from seminars and workshops
+- **💼 Training Materials**: Convert training videos into reusable presentation formats
+- **📝 Content Summarization**: Create executive summaries from video content
+
+## 🏗️ Project Structure
+
+```
+video2ppt/
+├── app/                          # Next.js app directory
+│   ├── [locale]/                 # Internationalized routes
+│   │   ├── local-video/         # Local video processing
+│   │   ├── online-video/        # Online video processing
+│   │   └── screen-recording/    # Screen recording feature
+│   ├── api/                     # API routes
+│   └── utils/                   # Utility functions
+├── components/                   # Reusable UI components
+├── hooks/                       # Custom React hooks
+├── messages/                    # Internationalization files
+│   ├── en.json                  # English translations
+│   └── zh.json                  # Chinese translations
+├── public/                      # Static assets
+└── ...config files
 ```
 
-运行开发服务器:
+## 🛠️ Development
+
+### Available Scripts
 
 ```bash
-npm run dev
-# 或
-yarn dev
-# 或
-pnpm dev
+# Development
+npm run dev          # Start development server
+npm run build        # Build for production
+npm run start        # Start production server
+npm run lint         # Run ESLint
+
+# Type checking
+npx tsc --noEmit     # Check TypeScript types
 ```
 
-在浏览器中打开 [http://localhost:3000](http://localhost:3000) 查看结果。
+### Adding New Languages
 
-## 适用场景
+1. Add locale to `i18n.ts`:
+   ```typescript
+   export const locales = ['zh', 'en', 'your-locale'] as const
+   ```
 
-- **网络会议**: 提取会议中的关键内容，制作会议纪要
-- **在线课程**: 将冗长的教学视频转化为简洁PPT，便于学习和复习
-- **研讨会**: 捕捉专家分享的精华内容，形成易于传播的知识结晶
-- **自学进修**: 从教育视频中提取知识点，辅助自主学习
+2. Create translation file:
+   ```bash
+   cp messages/en.json messages/your-locale.json
+   ```
 
-## 许可证 📜
+3. Translate the content in the new file
 
-**⚠️ 重要声明：本项目采用 CC BY-NC-SA 4.0 许可证**
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+
+### Development Workflow
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit your changes: `git commit -m 'Add amazing feature'`
+4. Push to the branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+### Code Style
+
+- Follow TypeScript best practices
+- Use functional components and hooks
+- Follow the existing code style (Prettier + ESLint)
+- Write meaningful commit messages
+
+## 📋 Roadmap
+
+- [ ] **Enhanced AI Processing**: Improved content extraction algorithms
+- [ ] **More Export Formats**: Support for Google Slides, Keynote
+- [ ] **Cloud Storage Integration**: Direct export to cloud services
+- [ ] **Advanced Templates**: More professional PPT templates
+- [ ] **Collaboration Features**: Real-time collaborative editing
+- [ ] **API Access**: RESTful API for developers
+
+## 🐛 Bug Reports & Feature Requests
+
+Found a bug? Have a feature idea? Please use our [Issue Templates](.github/ISSUE_TEMPLATE/):
+
+- [🐛 Bug Report](.github/ISSUE_TEMPLATE/bug_report.md)
+- [✨ Feature Request](.github/ISSUE_TEMPLATE/feature_request.md)
+
+## 📄 License
+
+**⚠️ Important: This project is licensed under CC BY-NC-SA 4.0**
 
 [![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
 
-### 你可以自由地：
+### You are free to:
 
-- ✅ **分享** — 在任何媒介以任何形式复制、发行本作品
-- ✅ **演绎** — 修改、转换或以本作品为基础进行创作
-- ✅ **学习研究** — 用于个人学习、教育、研究目的
-- ✅ **非营利使用** — 在非营利组织中使用
+- ✅ **Share** — Copy and redistribute the material in any medium or format
+- ✅ **Adapt** — Remix, transform, and build upon the material
+- ✅ **Personal Use** — Use for learning, education, and research
+- ✅ **Non-profit Use** — Use in non-profit organizations
 
-### 惟须遵守下列条件：
+### Under the following terms:
 
-- 📝 **署名** — 您必须给出适当的署名，提供指向本许可协议的链接，同时标明是否（对原始作品）作了修改
-- 🚫 **非商业性使用** — 您不得将本作品用于商业目的
-- 🔄 **相同方式共享** — 如果您再混合、转换或者基于本作品进行创作，您必须基于与原先许可协议相同的许可协议分发您贡献的作品
+- 📝 **Attribution** — Give appropriate credit, provide a link to the license, and indicate if changes were made
+- 🚫 **NonCommercial** — You may not use the material for commercial purposes
+- 🔄 **ShareAlike** — If you remix, transform, or build upon the material, you must distribute your contributions under the same license
 
-### 商业使用说明
+### Commercial Use Prohibited
 
-本项目**严格禁止商业使用**，包括但不限于：
+This project **strictly prohibits commercial use**, including but not limited to:
 
-- ❌ 出售软件或其衍生作品
-- ❌ 在商业产品或服务中使用
-- ❌ 用于盈利性活动
-- ❌ 将软件集成到商业软件中
-- ❌ 基于本软件提供付费服务
-- ❌ 在营利性组织中使用（除非获得商业许可）
+- ❌ Selling the software or derivatives
+- ❌ Using in commercial products or services
+- ❌ Profit-generating activities
+- ❌ Integration into commercial software
+- ❌ Providing paid services based on this software
 
-### 商业授权
+### Commercial Licensing
 
-如需商业使用，请联系版权持有者获取商业许可：
+For commercial use, please contact the copyright holder for a commercial license:
 
-- 📧 **联系方式**: wangxs1995s@gmail.com
+- 📧 **Contact**: wangxs1995s@gmail.com
 - 🔗 **GitHub**: https://github.com/AxisIndie/video2ppt
-- 💼 **商业合作**: 我们提供灵活的商业许可方案
+- 💼 **Business Inquiries**: Flexible commercial licensing available
 
-### 完整许可证
+### Full License
 
-- 📄 **许可证全文**: [Creative Commons BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)
-- 📋 **法律条文**: [完整法律文本](https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode)
-- 📖 **本地文件**: 详细条款请查看 [LICENSE](./LICENSE) 文件
+- 📄 **License Text**: [Creative Commons BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+- 📋 **Legal Code**: [Complete Legal Text](https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode)
+- 📖 **Local File**: See [LICENSE](./LICENSE) for detailed terms
 
-**Copyright (c) 2025 video2ppt - Licensed under CC BY-NC-SA 4.0**
+## 🙏 Acknowledgments
+
+- [Next.js](https://nextjs.org/) team for the amazing framework
+- [FFmpeg.wasm](https://ffmpegwasm.netlify.app/) for client-side video processing
+- [Shadcn UI](https://ui.shadcn.com/) for beautiful components
+- [Tailwind CSS](https://tailwindcss.com/) for utility-first styling
+
+## 📞 Support & Contact
+
+- 🌐 **Website**: [video2ppt.com](https://video2ppt.com)
+- 📧 **Email**: wangxs1995s@gmail.com
+- 🐙 **GitHub**: [AxisIndie/video2ppt](https://github.com/AxisIndie/video2ppt)
+- 💬 **Issues**: [GitHub Issues](https://github.com/AxisIndie/video2ppt/issues)
+
+---
+
+**Copyright (c) 2025 Video2PPT - Licensed under CC BY-NC-SA 4.0**
+
+Made with ❤️ by the Video2PPT team

@@ -2,14 +2,17 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 // 从分离的模块导入
-import { calculateImageDifference, setupVideoCanvas } from '../utils/videoProcessing'
-import { processLocalVideo, LocalVideoProcessingOptions, LocalVideoProcessingCallbacks } from '../utils/localVideoProcessing'
-import { VideoDurationInfo, detectVideoFormat } from '../utils/videoDurationUtils'
-import { generatePptBlob } from '../utils/pptGeneration'
-import { isVideoFile, createFileObjectURL, revokeFileObjectURL, formatFileSize } from '../utils/fileHandling'
+import { calculateImageDifference, setupVideoCanvas } from '../../utils/videoProcessing'
+import { processLocalVideo, LocalVideoProcessingOptions, LocalVideoProcessingCallbacks } from '../../utils/localVideoProcessing'
+import { VideoDurationInfo, detectVideoFormat } from '../../utils/videoDurationUtils'
+import { generatePptBlob } from '../../utils/pptGeneration'
+import { isVideoFile, createFileObjectURL, revokeFileObjectURL, formatFileSize } from '../../utils/fileHandling'
 
 export default function LocalVideoPage() {
+  const t = useTranslations('LocalVideo')
+  
   const [dragActive, setDragActive] = useState<boolean>(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isProcessing, setIsProcessing] = useState<boolean>(false)
@@ -286,10 +289,10 @@ export default function LocalVideoPage() {
         <div className="card bg-light mb-8">
           {!selectedFile && (
             <>
-              <h2 className="text-2xl font-bold mb-4">上传视频文件</h2>
-              <p className="mb-6">支持MP4, AVI, MOV, WMV, WebM等常见视频格式，单个文件大小限制100MB。</p>
+              <h2 className="text-2xl font-bold mb-4">{t('uploadVideo')}</h2>
+              <p className="mb-6">{t('support')}</p>
               <p className="mb-6 text-sm text-gray-600">
-                <strong>🚀 快速检测：</strong> 跳过元数据加载，直接使用seek和二分法检测时长，提高处理速度
+                <strong>🚀 快速检测：</strong> {t('quickDetection')}
               </p>
             </>
           )}
@@ -306,10 +309,10 @@ export default function LocalVideoPage() {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto mb-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
               </svg>
-              <p className="text-lg mb-4">将视频文件拖放到这里</p>
+              <p className="text-lg mb-4">{t('dragDrop')}</p>
               <p className="text-gray-500 mb-4">- 或者 -</p>
               <label className="btn bg-primary text-light cursor-pointer">
-                选择视频文件
+                {t('chooseVideo')}
                 <input 
                   type="file" 
                   className="hidden" 
@@ -325,7 +328,7 @@ export default function LocalVideoPage() {
           {/* 视频预览 */}
           {videoUrl && (
             <div className="mb-6">
-              <h3 className="text-xl font-bold mb-3">视频预览</h3>
+              <h3 className="text-xl font-bold mb-3">{t('videoPreview')}</h3>
               <div className="relative border-3 border-black">
                 <video 
                   ref={videoRef} 
@@ -345,14 +348,14 @@ export default function LocalVideoPage() {
                 onClick={handleExtractPPT}
                 className="btn bg-primary text-light w-full text-xl py-4 transform hover:rotate-1"
               >
-                开始提取PPT
+                {t('startExtract')}
                 {videoFormat === 'webm' && <span className="ml-2 text-sm">(增强模式)</span>}
               </button>
               <button 
                 onClick={handleClearFile}
                 className="btn bg-accent text-light w-full py-2 text-sm transform hover:rotate-1"
               >
-                重新选择视频
+                {t('chooseAnotherVideo')}
               </button>
             </div>
           )}
@@ -368,13 +371,13 @@ export default function LocalVideoPage() {
               </div>
               <p className="text-center font-bold">
                 {isPreprocessing 
-                  ? `视频预处理中……(${preprocessProgress.toFixed(0)}%)` 
-                  : `正在提取PPT (${extractionProgress.toFixed(0)}%)...`
+                  ? `${t('preprocessing')} (${preprocessProgress.toFixed(0)}%)` 
+                  : `${t('extracting')} (${extractionProgress.toFixed(0)}%)...`
                 }
               </p>
               {videoFormat === 'webm' && isPreprocessing && (
                 <p className="text-center text-sm text-gray-600">
-                  WebM格式正在使用增强检测算法，可能需要更长时间
+                  {t('webmEnhanced')}
                 </p>
               )}
             </div>
@@ -386,7 +389,7 @@ export default function LocalVideoPage() {
           {/* PPT预览 */}
           {previewScreenshots.length > 0 && (
             <div className="mt-6">
-              <h3 className="text-xl font-bold mb-3">PPT预览</h3>
+              <h3 className="text-xl font-bold mb-3">{t('pptPreview')}</h3>
               <div className="relative">
                 <div 
                   className="flex overflow-x-auto gap-3 p-4 border-3 border-black bg-white scrollbar-visible"
@@ -414,18 +417,18 @@ export default function LocalVideoPage() {
                 </div>
                 {previewScreenshots.length > 4 && (
                   <div className="flex justify-center mt-2 text-sm text-gray-600">
-                    <span>← 拖动查看更多幻灯片 →</span>
+                    <span>{t('dragToSeeMore')}</span>
                   </div>
                 )}
               </div>
               <p className="text-sm text-center mt-2">
                 {isExtracting 
-                  ? `正在提取幻灯片，已获取 ${screenshots.length} 张` 
-                  : `共提取 ${screenshots.length} 张幻灯片`
+                  ? `${t('extracting')} ${screenshots.length} ${t('slides')}` 
+                  : `${t('totalSlides')} ${screenshots.length}`
                 }
                 {durationInfo && !isExtracting && (
                   <span className="ml-2 text-gray-500">
-                    (基于{durationInfo.method}检测)
+                    ({durationInfo.method} {t('detection')})
                   </span>
                 )}
               </p>
@@ -446,39 +449,39 @@ export default function LocalVideoPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    生成PPT中...
+                    {t('generatingPPT')}...
                   </span>
-                ) : '下载PPT文件'}
+                ) : t('downloadPPT')}
               </button>
               <button 
                 onClick={handleClearFile}
                 className="btn bg-secondary text-black w-full py-2 text-sm transform hover:rotate-1"
                 disabled={isProcessing}
               >
-                重新选择视频
+                {t('chooseAnotherVideo')}
               </button>
             </div>
           )}
         </div>
 
         <div className="card bg-light">
-          <h2 className="text-2xl font-bold mb-4">本地视频转PPT的优势</h2>
+          <h2 className="text-2xl font-bold mb-4">{t('advantages')}</h2>
           <ul className="space-y-4">
             <li className="flex items-start">
               <div className="bg-primary text-light w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
-              <p><strong>无需上传到服务器</strong> - 所有处理在你的设备上完成，保护隐私</p>
+              <p><strong>{t('noServer')}</strong> - {t('privacy')}</p>
             </li>
             <li className="flex items-start">
               <div className="bg-secondary w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
-              <p><strong>支持高清视频</strong> - 准确提取视频中的文字、图表和重要内容</p>
+              <p><strong>{t('highQuality')}</strong> - {t('accurate')}</p>
             </li>
             <li className="flex items-start">
               <div className="bg-accent text-light w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
-              <p><strong>快速处理</strong> - 几分钟内完成转换，节省大量手动整理时间</p>
+              <p><strong>{t('quickProcessing')}</strong> - {t('saveTime')}</p>
             </li>
             <li className="flex items-start">
               <div className="bg-yellow-400 w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">⚡</div>
-              <p><strong>快速检测算法</strong> - 采用ssim算法提高准确率</p>
+              <p><strong>{t('quickDetectionAlgorithm')}</strong> - {t('ssimImprove')}</p>
             </li>
           </ul>
         </div>

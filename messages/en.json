@@ -1,0 +1,183 @@
+{
+  "Meta": {
+    "title": "Video2PPT - Free Tool to Convert Videos to PPT",
+    "description": "Convert videos from any source to Slides, including local, online videos, screen recording. Support real-time screen recording with PPT extraction, completely free!"
+  },
+  "Nav": {
+    "title": "Video2PPT",
+    "description": "Free tool to convert videos to PPT",
+    "screenRecording": "Screen Recording",
+    "localVideo": "Local Video",
+    "onlineVideo": "Online Video"
+  },
+  "HomePage": {
+    "title": "Intelligently Convert Any Video to Beautiful PPT",
+    "subtitle": "Whether it's local videos, online courses, or real-time screen recording, Video2PPT can quickly extract key content and generate professional slides. Perfect for meeting notes, study materials, course summaries, and more.",
+    "getStarted": "Get Started Now",
+    "freeToUse": "100% Free to Use",
+    "heroAlt": "Video2PPT Feature Showcase",
+    "efficientConversion": "Efficient Conversion",
+    "features": {
+      "title": "Powerful Features",
+      "multiSource": {
+        "title": "Multiple Sources Support",
+        "description": "Local videos, online video links, YouTube, Bilibili and other platforms, one-click import and fast processing."
+      },
+      "realTimeRecording": {
+        "title": "Real-time Screen Recording",
+        "description": "Record while meeting, automatically identify screen content, extract key information, and efficiently record meeting points."
+      },
+      "smartExtraction": {
+        "title": "Smart Content Extraction",
+        "description": "Automatically identify text, charts, and key content in videos to generate structured PPT, saving time and effort."
+      }
+    },
+    "howItWorks": {
+      "title": "How It Works",
+      "step1": {
+        "title": "Upload or Provide Video",
+        "description": "Upload local video files, provide online video links, or choose to record screen directly."
+      },
+      "step2": {
+        "title": "Smart Processing & Analysis",
+        "description": "Our AI system automatically analyzes video content, identifies key information, and extracts important frames and text."
+      },
+      "step3": {
+        "title": "Download PPT File",
+        "description": "Complete processing in minutes, generate professional PPT files that can be downloaded directly or edited further."
+      }
+    },
+    "useCases": {
+      "title": "Use Cases",
+      "meetingRecords": {
+        "title": "Online Meeting Records",
+        "description": "Record online meetings in real-time, automatically generate meeting minutes PPT, making team collaboration more efficient."
+      },
+      "studyNotes": {
+        "title": "Course Study Notes",
+        "description": "Convert online course videos into structured study notes to improve learning efficiency."
+      },
+      "seminarContent": {
+        "title": "Seminar Content Extraction",
+        "description": "Attend online seminars, automatically extract key content, and generate essence summaries."
+      },
+      "teachingVideos": {
+        "title": "Teaching Videos to PPT",
+        "description": "Convert teaching videos into courseware, convenient for teachers to prepare lessons and students to review."
+      },
+      "speechContent": {
+        "title": "Speech Content Organization",
+        "description": "Convert speech videos into PPT, extract speech key points, convenient for subsequent sharing."
+      },
+      "tutorialKnowledge": {
+        "title": "Tutorial Knowledge Extraction",
+        "description": "Extract key knowledge points from video tutorials and generate learning materials."
+      }
+    },
+    "cta": {
+      "title": "Start Using For Free",
+      "description": "No registration required, no payment needed. Experience the powerful features of Video2PPT immediately and boost your work and study efficiency!",
+      "startRecording": "Start Recording",
+      "uploadLocal": "Upload Local Video",
+      "onlineVideo": "Online Video Conversion",
+      "or": "- or -"
+    }
+  },
+  "LocalVideo": {
+    "title": "Local Video to PPT",
+    "uploadVideo": "Upload Video File",
+    "support": "Supports common video formats like MP4, AVI, MOV, WMV, WebM, with a single file size limit of 100MB.",
+    "quickDetection": "Skip metadata loading, directly use seek and binary search to detect duration, improving processing speed",
+    "dragDrop": "Drag video files here",
+    "or": "- or -",
+    "chooseVideo": "Select Video File",
+    "videoPreview": "Video Preview",
+    "startExtract": "Start Extracting PPT",
+    "enhancedMode": "(Enhanced Mode)",
+    "chooseAnotherVideo": "Reselect Video",
+    "preprocessing": "Video preprocessing...",
+    "extracting": "Extracting PPT",
+    "webmEnhanced": "WebM format is using enhanced detection algorithm, may take longer",
+    "pptPreview": "PPT Preview",
+    "dragToSeeMore": "← Drag to view more slides →",
+    "slides": "slides",
+    "totalSlides": "Total extracted",
+    "detection": "detection",
+    "generatingPPT": "Generating PPT",
+    "downloadPPT": "Download PPT File",
+    "advantages": "Advantages of Local Video to PPT",
+    "noServer": "No need to upload to server",
+    "privacy": "All processing done on your device, protecting privacy",
+    "highQuality": "Support HD videos",
+    "accurate": "Accurately extract text, charts and important content from videos",
+    "quickProcessing": "Fast processing",
+    "saveTime": "Complete conversion in minutes, saving lots of manual organization time",
+    "quickDetectionAlgorithm": "Fast detection algorithm",
+    "ssimImprove": "Using SSIM algorithm to improve accuracy"
+  },
+  "ScreenRecording": {
+    "title": "Real-time Screen Recording to PPT",
+    "screenRecording": "Screen Recording",
+    "description": "After clicking start recording, please select \"Entire Screen\" option to start recording. The system will automatically record screen and system audio.",
+    "readyToRecord": "Ready to start full screen recording",
+    "selectFullScreen": "After clicking start recording, please select \"Entire Screen\" in the popup",
+    "processing": "Processing...",
+    "startRecording": "Start Recording",
+    "pause": "Pause",
+    "continue": "Continue",
+    "stopRecording": "Stop Recording",
+    "downloadWebM": "Download WebM (Fast)",
+    "downloadMP4": "Download MP4 (High Quality)",
+    "converting": "Converting format...",
+    "reRecord": "Re-record",
+    "processingPlease": "Processing, please wait...",
+    "pptPreview": "PPT Preview",
+    "pptDescription": "View PPT slides automatically generated from recorded videos, you can browse pages or return to latest content.",
+    "noPptGenerated": "No PPT generated yet",
+    "recordToView": "Record and process video to view slides",
+    "autoExtract": "Auto Extract",
+    "currentPage": "Current Page",
+    "previousPage": "Previous",
+    "nextPage": "Next",
+    "backToLatest": "Back to Latest",
+    "downloadPPT": "Download PPT",
+    "features": {
+      "title": "Screen Recording Features",
+      "fullScreen": "Full Screen Recording - Record entire screen content, capture all applications and desktop activities",
+      "systemAudio": "System Audio - Automatically record system audio, including application sounds and media playback",
+      "recordControl": "Recording Control - Provide pause/resume functionality, flexible control of recording process",
+      "multiFormat": "Multi-format Download - Support WebM (fast) and MP4 (high quality) video formats"
+    }
+  },
+  "OnlineVideo": {
+    "title": "Online Video to PPT",
+    "description": "Enter online video link, automatically download and convert to PPT",
+    "videoLink": "Video Link",
+    "linkPlaceholder": "Enter video link (supports YouTube, Bilibili, etc.)",
+    "startConvert": "Start Converting",
+    "processing": "Processing...",
+    "supportedPlatforms": "Supported Platforms",
+    "youtube": {
+      "name": "YouTube",
+      "description": "Supports all public videos"
+    },
+    "bilibili": {
+      "name": "Bilibili",
+      "description": "Supports public video content"
+    },
+    "vimeo": {
+      "name": "Vimeo",
+      "description": "Supports public and private videos"
+    },
+    "more": {
+      "name": "More Platforms",
+      "description": "Continuously adding support"
+    },
+    "comingSoon": "This feature is under development, stay tuned!"
+  },
+  "Common": {
+    "language": "Language",
+    "chinese": "中文",
+    "english": "English"
+  }
+} 
