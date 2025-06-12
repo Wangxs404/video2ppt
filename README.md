@@ -25,18 +25,19 @@ A free, privacy-focused online tool that converts videos from any source into Po
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm, yarn, or pnpm
 
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/AxisIndie/video2ppt.git
    cd video2ppt
    ```
-
 2. **Install dependencies**
+
    ```bash
    npm install
    # or
@@ -44,8 +45,8 @@ A free, privacy-focused online tool that converts videos from any source into Po
    # or
    pnpm install
    ```
-
 3. **Start development server**
+
    ```bash
    npm run dev
    # or
@@ -53,14 +54,14 @@ A free, privacy-focused online tool that converts videos from any source into Po
    # or
    pnpm dev
    ```
-
 4. **Open your browser**
-   
+
    Navigate to [http://localhost:3000](http://localhost:3000)
 
 ## 🏗️ Tech Stack
 
 ### Frontend
+
 - **Framework**: Next.js 14 (App Router)
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
@@ -70,12 +71,14 @@ A free, privacy-focused online tool that converts videos from any source into Po
 - **Internationalization**: next-intl
 
 ### Core Libraries
+
 - **Video Processing**: FFmpeg.wasm
 - **PPT Generation**: PptxGenJS
 - **File Handling**: File-saver, JSZip
 - **WebSocket**: ws
 
 ### Development Tools
+
 - **Linting**: ESLint
 - **Package Manager**: pnpm
 - **Build Tool**: Next.js built-in
@@ -83,16 +86,19 @@ A free, privacy-focused online tool that converts videos from any source into Po
 ## 📖 Usage
 
 ### 1. Local Video Processing
+
 - Upload video files from your device
 - Supports common formats (MP4, AVI, MOV, etc.)
 - Process and extract key frames and content
 
 ### 2. Online Video Processing
+
 - Paste video URLs from popular platforms
 - Automatic content extraction and analysis
 - Generate structured presentations
 
 ### 3. Screen Recording
+
 - Real-time screen capture
 - Live PPT generation during recording
 - Perfect for live presentations and tutorials
@@ -125,53 +131,9 @@ video2ppt/
 └── ...config files
 ```
 
-## 🛠️ Development
-
-### Available Scripts
-
-```bash
-# Development
-npm run dev          # Start development server
-npm run build        # Build for production
-npm run start        # Start production server
-npm run lint         # Run ESLint
-
-# Type checking
-npx tsc --noEmit     # Check TypeScript types
-```
-
-### Adding New Languages
-
-1. Add locale to `i18n.ts`:
-   ```typescript
-   export const locales = ['zh', 'en', 'your-locale'] as const
-   ```
-
-2. Create translation file:
-   ```bash
-   cp messages/en.json messages/your-locale.json
-   ```
-
-3. Translate the content in the new file
-
 ## 🤝 Contributing
 
 We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
-### Development Workflow
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit your changes: `git commit -m 'Add amazing feature'`
-4. Push to the branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
-
-### Code Style
-
-- Follow TypeScript best practices
-- Use functional components and hooks
-- Follow the existing code style (Prettier + ESLint)
-- Write meaningful commit messages
 
 ## 📋 Roadmap
 
@@ -243,8 +205,8 @@ For commercial use, please contact the copyright holder for a commercial license
 
 - 🌐 **Website**: [video2ppt.com](https://video2ppt.com)
 - 📧 **Email**: wangxs1995s@gmail.com
-- 🐙 **GitHub**: [AxisIndie/video2ppt](https://github.com/AxisIndie/video2ppt)
-- 💬 **Issues**: [GitHub Issues](https://github.com/AxisIndie/video2ppt/issues)
+- 🐙 **GitHub**: [Wangxs404/video2ppt](https://github.com/wangxs404/video2ppt)
+- 💬 **Issues**: [GitHub Issues](https://github.com/wangxs404/video2ppt/issues)
 
 ---
 

@@ -25,18 +25,19 @@
 
 ### 环境要求
 
-- Node.js 18+ 
+- Node.js 18+
 - npm、yarn 或 pnpm
 
 ### 安装步骤
 
 1. **克隆仓库**
+
    ```bash
    git clone https://github.com/AxisIndie/video2ppt.git
    cd video2ppt
    ```
-
 2. **安装依赖**
+
    ```bash
    npm install
    # 或
@@ -44,8 +45,8 @@
    # 或
    pnpm install
    ```
-
 3. **启动开发服务器**
+
    ```bash
    npm run dev
    # 或
@@ -53,14 +54,14 @@
    # 或
    pnpm dev
    ```
-
 4. **打开浏览器**
-   
+
    访问 [http://localhost:3000](http://localhost:3000)
 
 ## 🏗️ 技术栈
 
 ### 前端技术
+
 - **框架**: Next.js 14 (App Router)
 - **编程语言**: TypeScript
 - **样式**: Tailwind CSS
@@ -70,12 +71,14 @@
 - **国际化**: next-intl
 
 ### 核心库
+
 - **视频处理**: FFmpeg.wasm
 - **PPT生成**: PptxGenJS
 - **文件处理**: File-saver, JSZip
 - **WebSocket**: ws
 
 ### 开发工具
+
 - **代码检查**: ESLint
 - **包管理器**: pnpm
 - **构建工具**: Next.js 内置
@@ -83,16 +86,19 @@
 ## 📖 使用说明
 
 ### 1. 本地视频处理
+
 - 从设备上传视频文件
 - 支持常见格式（MP4、AVI、MOV等）
 - 处理并提取关键帧和内容
 
 ### 2. 在线视频处理
+
 - 粘贴来自热门平台的视频链接
 - 自动内容提取和分析
 - 生成结构化演示文稿
 
 ### 3. 实时录屏
+
 - 实时屏幕捕获
 - 录制过程中实时生成PPT
 - 完美适配现场演示和教程
@@ -124,35 +130,6 @@ video2ppt/
 ├── public/                      # 静态资源
 └── ...配置文件
 ```
-
-## 🛠️ 开发指南
-
-### 可用脚本
-
-```bash
-# 开发
-npm run dev          # 启动开发服务器
-npm run build        # 生产构建
-npm run start        # 启动生产服务器
-npm run lint         # 运行 ESLint
-
-# 类型检查
-npx tsc --noEmit     # 检查 TypeScript 类型
-```
-
-### 添加新语言
-
-1. 在 `i18n.ts` 中添加语言:
-   ```typescript
-   export const locales = ['zh', 'en', 'your-locale'] as const
-   ```
-
-2. 创建翻译文件:
-   ```bash
-   cp messages/en.json messages/your-locale.json
-   ```
-
-3. 在新文件中翻译内容
 
 ## 🤝 贡献指南
 
@@ -243,11 +220,9 @@ npx tsc --noEmit     # 检查 TypeScript 类型
 
 - 🌐 **网站**: [video2ppt.com](https://video2ppt.com)
 - 📧 **邮箱**: wangxs1995s@gmail.com
-- 🐙 **GitHub**: [AxisIndie/video2ppt](https://github.com/AxisIndie/video2ppt)
-- 💬 **问题**: [GitHub Issues](https://github.com/AxisIndie/video2ppt/issues)
 
 ---
 
 **Copyright (c) 2025 Video2PPT - Licensed under CC BY-NC-SA 4.0**
 
-用 ❤️ 制作，由 Video2PPT 团队出品 
+用 ❤️ 制作，由 Video2PPT 团队出品
