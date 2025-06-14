@@ -662,6 +662,46 @@ export default function ScreenRecordingPage() {
             </div>
           </div>
         </div>
+
+        {/* More Features Section */}
+        <div className="card bg-light mt-8">
+          <h2 className="text-2xl font-bold mb-6 text-center">探索更多功能</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Link 
+              href="/local-video"
+              className="group p-6 border-3 border-black bg-white hover:bg-accent hover:text-light transition-all duration-200 transform hover:rotate-1"
+            >
+              <div className="flex items-center mb-4">
+                <div className="bg-accent group-hover:bg-light group-hover:text-black text-light w-12 h-12 rounded-full flex items-center justify-center mr-4 border-3 border-black">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold">本地视频转PPT</h3>
+              </div>
+              <p className="text-gray-600 group-hover:text-light">
+                上传本地视频文件快速转换为PPT，支持多种视频格式，隐私安全
+              </p>
+            </Link>
+            
+            <Link 
+              href="/online-video"
+              className="group p-6 border-3 border-black bg-white hover:bg-primary hover:text-light transition-all duration-200 transform hover:rotate-1"
+            >
+              <div className="flex items-center mb-4">
+                <div className="bg-primary group-hover:bg-light group-hover:text-black text-light w-12 h-12 rounded-full flex items-center justify-center mr-4 border-3 border-black">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold">在线视频转PPT</h3>
+              </div>
+              <p className="text-gray-600 group-hover:text-light">
+                从YouTube、Bilibili等平台直接转换视频为PPT，支持多种在线视频源
+              </p>
+            </Link>
+          </div>
+        </div>
       </div>
     </main>
   )
