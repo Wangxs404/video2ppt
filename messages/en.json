@@ -180,5 +180,83 @@
     "language": "Language",
     "chinese": "中文",
     "english": "English"
+  },
+  "Privacy": {
+    "title": "Privacy Policy",
+    "subtitle": "Your privacy is important to us",
+    "lastUpdated": "Last updated: June 2025",
+    "introduction": {
+      "title": "Introduction",
+      "content": "Video2PPT is committed to protecting your privacy. This Privacy Policy explains how we collect, use, and protect your information when you use our video to PowerPoint conversion service."
+    },
+    "dataCollection": {
+      "title": "Information We Collect",
+      "content": "We prioritize your privacy and minimize data collection:",
+      "items": [
+        "Video files you upload are processed locally on your device when possible",
+        "Basic analytics data to improve our service performance",
+        "Error logs to help us diagnose and fix technical issues",
+        "No personal identification information is required or stored"
+      ]
+    },
+    "dataUsage": {
+      "title": "How We Use Your Information",
+      "content": "The limited information we collect is used only to:",
+      "items": [
+        "Process your video files and generate PowerPoint presentations",
+        "Improve the quality and performance of our service",
+        "Provide technical support when needed",
+        "Ensure the security and reliability of our platform"
+      ]
+    },
+    "dataStorage": {
+      "title": "Data Storage and Security",
+      "content": "We implement strong security measures:",
+      "items": [
+        "Local processing: Most video processing happens on your device",
+        "Temporary storage: Any server processing uses temporary storage only",
+        "No permanent storage: Files are automatically deleted after processing",
+        "Encrypted connections: All data transfers use HTTPS encryption"
+      ]
+    },
+    "thirdParty": {
+      "title": "Third-Party Services",
+      "content": "We may use third-party services for:",
+      "items": [
+        "Analytics to understand usage patterns (anonymized data only)",
+        "CDN services for faster content delivery",
+        "Error tracking to improve service reliability"
+      ],
+      "note": "These services are carefully selected and comply with privacy standards."
+    },
+    "userRights": {
+      "title": "Your Rights",
+      "content": "You have the right to:",
+      "items": [
+        "Use our service without creating an account",
+        "Process videos locally without uploading to our servers",
+        "Request information about any data we may have",
+        "Contact us with privacy-related questions or concerns"
+      ]
+    },
+    "dataRetention": {
+      "title": "Data Retention",
+      "content": "We follow strict data retention policies:",
+      "items": [
+        "Video files are not permanently stored on our servers",
+        "Temporary processing files are deleted within 24 hours",
+        "Analytics data is anonymized and aggregated",
+        "No personal video content is retained after processing"
+      ]
+    },
+    "updates": {
+      "title": "Policy Updates",
+      "content": "We may update this Privacy Policy occasionally. When we do, we will post the updated policy on this page and update the \"Last updated\" date. We encourage you to review this policy periodically."
+    },
+    "contact": {
+      "title": "Contact Us",
+      "content": "If you have questions about this Privacy Policy or our privacy practices, please contact us:",
+      "email": "Contact us through our website or GitHub repository"
+    }
   }
 } 
