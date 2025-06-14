@@ -181,6 +181,11 @@
     "chinese": "中文",
     "english": "English"
   },
+  "Footer": {
+    "copyright": "© {year} Video2PPT. 所有权利保留.",
+    "description": "完全免费，永久使用。",
+    "privacy": "隐私政策"
+  },
   "Privacy": {
     "title": "隐私政策",
     "subtitle": "您的隐私对我们很重要",

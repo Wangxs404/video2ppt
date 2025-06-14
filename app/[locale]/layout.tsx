@@ -5,6 +5,7 @@ import { getMessages, getTranslations } from 'next-intl/server'
 import { notFound } from 'next/navigation'
 import { locales } from '../../i18n'
 import Navigation from '../../components/navigation'
+import Footer from '../../components/footer'
 import '../globals.css'
 import { Analytics } from "@vercel/analytics/react"
 
@@ -161,6 +162,7 @@ export default async function LocaleLayout({
         <NextIntlClientProvider messages={messages}>
           <Navigation />
           {children}
+          <Footer />
           <Analytics />
         </NextIntlClientProvider>
       </body>
