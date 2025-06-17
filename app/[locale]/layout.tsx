@@ -8,6 +8,7 @@ import Navigation from '../../components/navigation'
 import Footer from '../../components/footer'
 import '../globals.css'
 import { Analytics } from "@vercel/analytics/react"
+import { TallyFeedback } from '../../components/TallyFeedback'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -163,6 +164,7 @@ export default async function LocaleLayout({
           <Navigation />
           {children}
           <Footer />
+          <TallyFeedback />
           <Analytics />
         </NextIntlClientProvider>
       </body>
