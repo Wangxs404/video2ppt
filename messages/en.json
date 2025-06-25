@@ -120,6 +120,16 @@
     "title": "Real-time Screen Recording to PPT",
     "screenRecording": "Screen Recording",
     "description": "After clicking start recording, please select \"Entire Screen\" option to start recording. The system will automatically record screen and system audio.",
+    "mobileNotSupported": "Mobile Device Not Supported",
+    "useDeskTopBrowser": "Please use desktop browser for screen recording",
+    "mobileNotice": "Screen recording feature requires desktop environment. Please access this page on your computer.",
+    "whyDesktopOnly": "Why desktop only?",
+    "desktopReasons": [
+      "Screen recording API is only available on desktop browsers",
+      "Better performance and stability for video processing",
+      "Full screen capture requires desktop environment"
+    ],
+    "exploreOtherFeatures": "Explore Other Features",
     "readyToRecord": "Ready to start full screen recording",
     "selectFullScreen": "After clicking start recording, please select \"Entire Screen\" in the popup",
     "processing": "Processing...",

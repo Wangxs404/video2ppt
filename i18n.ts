@@ -5,8 +5,8 @@ import { getRequestConfig } from 'next-intl/server'
 export const locales = ['zh', 'en'] as const
 export type Locale = (typeof locales)[number]
 
-// 默认语言
-export const defaultLocale: Locale = 'zh'
+// 默认语言 - 改为en，实际语言通过浏览器检测决定
+export const defaultLocale: Locale = 'en'
 
 // 类型检查函数
 export function hasLocale(locales: readonly string[], locale: unknown): locale is string {

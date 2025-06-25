@@ -13,8 +13,29 @@ import {
   resetScreenshotNavigation
 } from '../../utils/screenshotNavigation'
 
+// 检测是否为移动设备的函数
+function isMobileDevice(): boolean {
+  if (typeof window === 'undefined') return false
+  
+  // 检查用户代理字符串
+  const userAgent = window.navigator.userAgent.toLowerCase()
+  const mobileKeywords = ['mobile', 'android', 'iphone', 'ipad', 'ipod', 'blackberry', 'windows phone']
+  const isMobileUA = mobileKeywords.some(keyword => userAgent.includes(keyword))
+  
+  // 检查屏幕尺寸
+  const isMobileScreen = window.innerWidth <= 768
+  
+  // 检查触摸支持
+  const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+  
+  return isMobileUA || (isMobileScreen && isTouchDevice)
+}
+
 export default function ScreenRecordingPage() {
   const t = useTranslations('ScreenRecording')
+  
+  // 设备检测状态
+  const [isMobile, setIsMobile] = useState<boolean>(false)
   
   // 录制状态
   const [recordingState, setRecordingState] = useState<'idle' | 'ready' | 'recording' | 'paused' | 'processing' | 'converting'>('idle')
@@ -48,6 +69,11 @@ export default function ScreenRecordingPage() {
   const lastScreenshotTimeRef = useRef<number>(0)
   const lastImageDataRef = useRef<ImageData | null>(null)
   const diffThreshold = 30 // 图像差异阈值
+
+  // 设备检测 useEffect
+  useEffect(() => {
+    setIsMobile(isMobileDevice())
+  }, [])
 
   // 截图函数
   const captureScreenshot = () => {
@@ -411,297 +437,375 @@ export default function ScreenRecordingPage() {
           <span className=" bg-secondary text-black px-3 py-1 border-3 border-black inline-block transform rotate-1">{t('title')}</span>
         </h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="card bg-light">
-            <h2 className="text-2xl font-bold mb-4">{t('screenRecording')}</h2>
-            <p className="mb-6">
-              {t('description')}
-            </p>
-            
-            {/* 录制预览区域 */}
-            <div className="border-3 border-black bg-dark aspect-video mb-6 relative overflow-hidden">
-              {/* 视频预览 */}
-              <video 
-                ref={videoRef}
-                autoPlay 
-                muted
-                playsInline
-                className={`w-full h-full object-contain ${recordingState === 'idle' ? 'hidden' : ''}`}
-              ></video>
-              
-              {recordingState === 'idle' && !videoUrl ? (
-                <div className="absolute inset-0 flex items-center justify-center flex-col text-light">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        {/* 移动设备提示界面 */}
+        {isMobile ? (
+          <div className="grid grid-cols-1 gap-8">
+            {/* 移动设备不支持提示 */}
+            <div className="card bg-light text-center">
+              <div className="max-w-md mx-auto">
+                <div className="bg-accent text-light w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 border-3 border-black">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
                   </svg>
-                  <p className="text-xl font-bold">{t('readyToRecord')}</p>
-                  <p className="text-gray-400 mt-2">{t('selectFullScreen')}</p>
                 </div>
-              ) : recordingState === 'recording' || recordingState === 'paused' ? (
-                <div className="absolute top-4 right-4 flex items-center space-x-2">
-                  <div className={`w-4 h-4 rounded-full ${recordingState === 'recording' ? 'bg-red-500 animate-pulse' : 'bg-yellow-500'}`}></div>
-                  <div className="bg-black bg-opacity-50 px-3 py-1 text-white font-bold rounded-md">
-                    {formatTime(recordingTime)}
-                  </div>
+                
+                <h2 className="text-3xl font-bold mb-4">{t('mobileNotSupported')}</h2>
+                <p className="text-xl mb-6 font-bold text-accent">{t('useDeskTopBrowser')}</p>
+                <p className="text-gray-600 mb-8">{t('mobileNotice')}</p>
+                
+                <div className="text-left bg-white border-3 border-black p-6 mb-8">
+                  <h3 className="text-lg font-bold mb-4 flex items-center">
+                    <span className="bg-primary text-light w-6 h-6 rounded-full flex items-center justify-center text-sm mr-3">?</span>
+                    {t('whyDesktopOnly')}
+                  </h3>
+                  <ul className="space-y-3">
+                    {t.raw('desktopReasons').map((reason: string, index: number) => (
+                      <li key={index} className="flex items-start">
+                        <span className="bg-accent text-light w-5 h-5 rounded-full flex items-center justify-center text-xs mr-3 mt-0.5 flex-shrink-0">•</span>
+                        <span>{reason}</span>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-              ) : videoUrl ? (
-                <video 
-                  src={videoUrl} 
-                  controls 
-                  className="w-full h-full"
-                ></video>
-              ) : (
-                <div className="absolute inset-0 flex items-center justify-center text-light">
-                  <svg className="animate-spin -ml-1 mr-3 h-10 w-10" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <span>{t('processing')}</span>
-                </div>
-              )}
+              </div>
             </div>
-            
-            {/* 录制控制按钮 */}
-            <div className="flex flex-wrap gap-4">
-              {recordingState === 'idle' && !videoUrl && (
-                <button 
-                  onClick={handleStartPrepare}
-                  className="btn bg-primary text-light flex-1"
+
+            {/* 探索其他功能 */}
+            <div className="card bg-light">
+              <h2 className="text-2xl font-bold mb-6 text-center">{t('exploreOtherFeatures')}</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Link 
+                  href="/local-video"
+                  className="group p-6 border-3 border-black bg-white hover:bg-accent hover:text-light transition-all duration-200 transform hover:rotate-1"
                 >
-                  {t('startRecording')}
-                </button>
-              )}
-              
-              {(recordingState === 'recording' || recordingState === 'paused') && (
-                <>
-                  <button 
-                    onClick={handlePauseRecording}
-                    className="btn bg-primary text-light flex-1"
-                  >
-                    {recordingState === 'recording' ? t('pause') : t('continue')}
-                  </button>
-                  <button 
-                    onClick={handleStopRecording}
-                    className="btn bg-accent text-light flex-1"
-                  >
-                    {t('stopRecording')}
-                  </button>
-                </>
-              )}
-              
-              {videoUrl && recordingState === 'idle' && (
-                <>
-                  <div className="w-full flex flex-col gap-3">
-                    <div className="flex flex-row gap-2 w-full">
-                      <button 
-                        onClick={handleDownloadWebM}
-                        className="btn bg-accent text-light w-1/2"
-                      >
-                        {t('downloadWebM')}
-                      </button>
-                      <button 
-                        onClick={handleConvertToMp4}
-                        disabled={isConverting}
-                        className={`btn ${isConverting ? 'bg-gray-400' : 'bg-primary'} text-light w-1/2 relative overflow-hidden`}
-                      >
-                        {isConverting ? (
-                          <>
-                            <span className="flex items-center justify-center">
-                              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              {t('converting')}
-                            </span>
-                            {/* 进度条 */}
-                            <div className="absolute bottom-0 left-0 h-1 bg-primary" style={{ width: `${conversionProgress}%` }}></div>
-                          </>
-                        ) : (
-                          t('downloadMP4')
-                        )}
-                      </button>
+                  <div className="flex items-center mb-4">
+                    <div className="bg-accent group-hover:bg-light group-hover:text-black text-light w-12 h-12 rounded-full flex items-center justify-center mr-4 border-3 border-black">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
                     </div>
+                    <h3 className="text-xl font-bold">{useTranslations('LocalVideo')('title')}</h3>
+                  </div>
+                  <p className="text-gray-600 group-hover:text-light">
+                    {useTranslations('LocalVideo')('support')}
+                  </p>
+                </Link>
+                
+                <Link 
+                  href="/online-video"
+                  className="group p-6 border-3 border-black bg-white hover:bg-primary hover:text-light transition-all duration-200 transform hover:rotate-1"
+                >
+                  <div className="flex items-center mb-4">
+                    <div className="bg-primary group-hover:bg-light group-hover:text-black text-light w-12 h-12 rounded-full flex items-center justify-center mr-4 border-3 border-black">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-bold">{useTranslations('OnlineVideo')('title')}</h3>
+                  </div>
+                  <p className="text-gray-600 group-hover:text-light">
+                    {useTranslations('OnlineVideo')('description')}
+                  </p>
+                </Link>
+              </div>
+            </div>
+          </div>
+        ) : (
+          // 桌面设备的原始界面
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="card bg-light">
+                <h2 className="text-2xl font-bold mb-4">{t('screenRecording')}</h2>
+                <p className="mb-6">
+                  {t('description')}
+                </p>
+                
+                {/* 录制预览区域 */}
+                <div className="border-3 border-black bg-dark aspect-video mb-6 relative overflow-hidden">
+                  {/* 视频预览 */}
+                  <video 
+                    ref={videoRef}
+                    autoPlay 
+                    muted
+                    playsInline
+                    className={`w-full h-full object-contain ${recordingState === 'idle' ? 'hidden' : ''}`}
+                  ></video>
+                  
+                  {recordingState === 'idle' && !videoUrl ? (
+                    <div className="absolute inset-0 flex items-center justify-center flex-col text-light">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      <p className="text-xl font-bold">{t('readyToRecord')}</p>
+                      <p className="text-gray-400 mt-2">{t('selectFullScreen')}</p>
+                    </div>
+                  ) : recordingState === 'recording' || recordingState === 'paused' ? (
+                    <div className="absolute top-4 right-4 flex items-center space-x-2">
+                      <div className={`w-4 h-4 rounded-full ${recordingState === 'recording' ? 'bg-red-500 animate-pulse' : 'bg-yellow-500'}`}></div>
+                      <div className="bg-black bg-opacity-50 px-3 py-1 text-white font-bold rounded-md">
+                        {formatTime(recordingTime)}
+                      </div>
+                    </div>
+                  ) : videoUrl ? (
+                    <video 
+                      src={videoUrl} 
+                      controls 
+                      className="w-full h-full"
+                    ></video>
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-light">
+                      <svg className="animate-spin -ml-1 mr-3 h-10 w-10" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      <span>{t('processing')}</span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* 录制控制按钮 */}
+                <div className="flex flex-wrap gap-4">
+                  {recordingState === 'idle' && !videoUrl && (
                     <button 
-                      onClick={() => {
-                        // 清理并重置
-                        if (videoUrl) {
-                          URL.revokeObjectURL(videoUrl)
-                        }
-                        if (mp4Url) {
-                          URL.revokeObjectURL(mp4Url)
-                        }
-                        setVideoBlob(null)
-                        setVideoUrl('')
-                        setMp4Url('')
-                      }}
-                      className="btn bg-light w-full"
-                      disabled={isConverting}
+                      onClick={handleStartPrepare}
+                      className="btn bg-primary text-light flex-1"
                     >
-                      {t('reRecord')}
+                      {t('startRecording')}
                     </button>
+                  )}
+                  
+                  {(recordingState === 'recording' || recordingState === 'paused') && (
+                    <>
+                      <button 
+                        onClick={handlePauseRecording}
+                        className="btn bg-primary text-light flex-1"
+                      >
+                        {recordingState === 'recording' ? t('pause') : t('continue')}
+                      </button>
+                      <button 
+                        onClick={handleStopRecording}
+                        className="btn bg-accent text-light flex-1"
+                      >
+                        {t('stopRecording')}
+                      </button>
+                    </>
+                  )}
+                  
+                  {videoUrl && recordingState === 'idle' && (
+                    <>
+                      <div className="w-full flex flex-col gap-3">
+                        <div className="flex flex-row gap-2 w-full">
+                          <button 
+                            onClick={handleDownloadWebM}
+                            className="btn bg-accent text-light w-1/2"
+                          >
+                            {t('downloadWebM')}
+                          </button>
+                          <button 
+                            onClick={handleConvertToMp4}
+                            disabled={isConverting}
+                            className={`btn ${isConverting ? 'bg-gray-400' : 'bg-primary'} text-light w-1/2 relative overflow-hidden`}
+                          >
+                            {isConverting ? (
+                              <>
+                                <span className="flex items-center justify-center">
+                                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                  </svg>
+                                  {t('converting')}
+                                </span>
+                                {/* 进度条 */}
+                                <div className="absolute bottom-0 left-0 h-1 bg-primary" style={{ width: `${conversionProgress}%` }}></div>
+                              </>
+                            ) : (
+                              t('downloadMP4')
+                            )}
+                          </button>
+                        </div>
+                        <button 
+                          onClick={() => {
+                            // 清理并重置
+                            if (videoUrl) {
+                              URL.revokeObjectURL(videoUrl)
+                            }
+                            if (mp4Url) {
+                              URL.revokeObjectURL(mp4Url)
+                            }
+                            setVideoBlob(null)
+                            setVideoUrl('')
+                            setMp4Url('')
+                          }}
+                          className="btn bg-light w-full"
+                          disabled={isConverting}
+                        >
+                          {t('reRecord')}
+                        </button>
+                      </div>
+                    </>
+                  )}
+                  
+                  {recordingState === 'processing' && (
+                    <div className="w-full text-center py-4">
+                      <div className="inline-flex items-center">
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span className="font-bold">{t('processingPlease')}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* PPT预览区域 */}
+              <div className="card bg-light">
+                <h2 className="text-2xl font-bold mb-4">{t('pptPreview')}</h2>
+                <p className="mb-6">
+                  {t('pptDescription')}
+                </p>
+                
+                {/* PPT预览画布区域 */}
+                <div className="border-3 border-black bg-dark aspect-video mb-6 relative overflow-hidden">
+                  {/* 画布预览 */}
+                  <canvas 
+                    ref={canvasRef}
+                    className="w-full h-full object-contain"
+                  ></canvas>
+                  
+                  {screenshots.length === 0 && (
+                    <div className="absolute inset-0 flex items-center justify-center flex-col text-light">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                      <p className="text-xl font-bold">{t('noPptGenerated')}</p>
+                      <p className="text-gray-400 mt-2">{t('recordToView')}</p>
+                    </div>
+                  )}
+                </div>
+                
+                {/* PPT控制选项 */}
+                <div className="flex flex-col sm:flex-row justify-between mb-6 space-y-4 sm:space-y-0">
+                  <div className="flex items-center space-x-4">
+                    <label className="inline-flex items-center cursor-pointer">
+                      <input 
+                        type="checkbox" 
+                        checked={true}
+                        className="sr-only peer" 
+                      />
+                      <div className="w-11 h-6 bg-gray-200 border-3 border-black peer-focus:outline-none peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[0px] after:left-[0px] after:bg-white after:border-3 after:border-black after:h-5 after:w-5 after:transition-all peer-checked:bg-accent relative"></div>
+                      <span className="ml-3 font-bold">{t('autoExtract')}</span>
+                    </label>
                   </div>
-                </>
-              )}
-              
-              {recordingState === 'processing' && (
-                <div className="w-full text-center py-4">
-                  <div className="inline-flex items-center">
-                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    <span className="font-bold">{t('processingPlease')}</span>
+                  
+                  <div className="font-bold">
+                    {t('currentPage')}: <span>{currentScreenshotIndex + 1}</span> / <span>{screenshots.length}</span>
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
-
-          {/* PPT预览区域 */}
-          <div className="card bg-light">
-            <h2 className="text-2xl font-bold mb-4">{t('pptPreview')}</h2>
-            <p className="mb-6">
-              {t('pptDescription')}
-            </p>
-            
-            {/* PPT预览画布区域 */}
-            <div className="border-3 border-black bg-dark aspect-video mb-6 relative overflow-hidden">
-              {/* 画布预览 */}
-              <canvas 
-                ref={canvasRef}
-                className="w-full h-full object-contain"
-              ></canvas>
-              
-              {screenshots.length === 0 && (
-                <div className="absolute inset-0 flex items-center justify-center flex-col text-light">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-20 w-20 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <p className="text-xl font-bold">{t('noPptGenerated')}</p>
-                  <p className="text-gray-400 mt-2">{t('recordToView')}</p>
+                
+                {/* PPT控制按钮 */}
+                <div className="flex flex-wrap gap-4">
+                  <button 
+                    onClick={handlePreviousScreenshot}
+                    disabled={currentScreenshotIndex <= 0 || screenshots.length === 0}
+                    className={`btn flex-1 ${currentScreenshotIndex <= 0 || screenshots.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-primary text-light'}`}
+                  >
+                    {t('previousPage')}
+                  </button>
+                  <button 
+                    onClick={handleNextScreenshot}
+                    disabled={currentScreenshotIndex >= screenshots.length - 1 || screenshots.length === 0}
+                    className={`btn flex-1 ${currentScreenshotIndex >= screenshots.length - 1 || screenshots.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-accent text-light'}`}
+                  >
+                    {t('nextPage')}
+                  </button>
+                  
+                  {/* 录制过程中显示回到最新按钮，录制结束后显示下载PPT按钮 */}
+                  {recordingState === 'recording' || recordingState === 'paused' ? (
+                    <button 
+                      onClick={handleLatestScreenshot}
+                      disabled={currentScreenshotIndex >= screenshots.length - 1 || screenshots.length === 0}
+                      className={`btn flex-1 ${currentScreenshotIndex >= screenshots.length - 1 || screenshots.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-light'}`}
+                    >
+                      {t('backToLatest')}
+                    </button>
+                  ) : (
+                    <button 
+                      onClick={handleDownloadPPT}
+                      disabled={screenshots.length === 0}
+                      className={`btn flex-1 ${screenshots.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-accent text-light'}`}
+                    >
+                      {t('downloadPPT')}
+                    </button>
+                  )}
                 </div>
-              )}
-            </div>
-            
-            {/* PPT控制选项 */}
-            <div className="flex flex-col sm:flex-row justify-between mb-6 space-y-4 sm:space-y-0">
-              <div className="flex items-center space-x-4">
-                <label className="inline-flex items-center cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    checked={true}
-                    className="sr-only peer" 
-                  />
-                  <div className="w-11 h-6 bg-gray-200 border-3 border-black peer-focus:outline-none peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[0px] after:left-[0px] after:bg-white after:border-3 after:border-black after:h-5 after:w-5 after:transition-all peer-checked:bg-accent relative"></div>
-                  <span className="ml-3 font-bold">{t('autoExtract')}</span>
-                </label>
-              </div>
-              
-              <div className="font-bold">
-                {t('currentPage')}: <span>{currentScreenshotIndex + 1}</span> / <span>{screenshots.length}</span>
               </div>
             </div>
-            
-            {/* PPT控制按钮 */}
-            <div className="flex flex-wrap gap-4">
-              <button 
-                onClick={handlePreviousScreenshot}
-                disabled={currentScreenshotIndex <= 0 || screenshots.length === 0}
-                className={`btn flex-1 ${currentScreenshotIndex <= 0 || screenshots.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-primary text-light'}`}
-              >
-                {t('previousPage')}
-              </button>
-              <button 
-                onClick={handleNextScreenshot}
-                disabled={currentScreenshotIndex >= screenshots.length - 1 || screenshots.length === 0}
-                className={`btn flex-1 ${currentScreenshotIndex >= screenshots.length - 1 || screenshots.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-accent text-light'}`}
-              >
-                {t('nextPage')}
-              </button>
-              
-              {/* 录制过程中显示回到最新按钮，录制结束后显示下载PPT按钮 */}
-              {recordingState === 'recording' || recordingState === 'paused' ? (
-                <button 
-                  onClick={handleLatestScreenshot}
-                  disabled={currentScreenshotIndex >= screenshots.length - 1 || screenshots.length === 0}
-                  className={`btn flex-1 ${currentScreenshotIndex >= screenshots.length - 1 || screenshots.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-light'}`}
+
+            <div className="card bg-light mt-8">
+              <h2 className="text-2xl font-bold mb-4">{t('features.title')}</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="flex items-start">
+                  <div className="bg-primary text-light w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
+                  <p>{t('features.fullScreen')}</p>
+                </div>
+                <div className="flex items-start">
+                  <div className="bg-secondary w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
+                  <p>{t('features.systemAudio')}</p>
+                </div>
+                <div className="flex items-start">
+                  <div className="bg-accent text-light w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
+                  <p>{t('features.recordControl')}</p>
+                </div>
+                <div className="flex items-start">
+                  <div className="bg-primary text-light w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
+                  <p>{t('features.multiFormat')}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* More Features Section */}
+            <div className="card bg-light mt-8">
+              <h2 className="text-2xl font-bold mb-6 text-center">{t('exploreOtherFeatures')}</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <Link 
+                  href="/local-video"
+                  className="group p-6 border-3 border-black bg-white hover:bg-accent hover:text-light transition-all duration-200 transform hover:rotate-1"
                 >
-                  {t('backToLatest')}
-                </button>
-              ) : (
-                <button 
-                  onClick={handleDownloadPPT}
-                  disabled={screenshots.length === 0}
-                  className={`btn flex-1 ${screenshots.length === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-accent text-light'}`}
+                  <div className="flex items-center mb-4">
+                    <div className="bg-accent group-hover:bg-light group-hover:text-black text-light w-12 h-12 rounded-full flex items-center justify-center mr-4 border-3 border-black">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-bold">{useTranslations('LocalVideo')('title')}</h3>
+                  </div>
+                  <p className="text-gray-600 group-hover:text-light">
+                    {useTranslations('LocalVideo')('support')}
+                  </p>
+                </Link>
+                
+                <Link 
+                  href="/online-video"
+                  className="group p-6 border-3 border-black bg-white hover:bg-primary hover:text-light transition-all duration-200 transform hover:rotate-1"
                 >
-                  {t('downloadPPT')}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="card bg-light mt-8">
-          <h2 className="text-2xl font-bold mb-4">{t('features.title')}</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-start">
-              <div className="bg-primary text-light w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
-              <p>{t('features.fullScreen')}</p>
-            </div>
-            <div className="flex items-start">
-              <div className="bg-secondary w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
-              <p>{t('features.systemAudio')}</p>
-            </div>
-            <div className="flex items-start">
-              <div className="bg-accent text-light w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
-              <p>{t('features.recordControl')}</p>
-            </div>
-            <div className="flex items-start">
-              <div className="bg-primary text-light w-8 h-8 flex items-center justify-center border-3 border-black mr-3 flex-shrink-0">✓</div>
-              <p>{t('features.multiFormat')}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* More Features Section */}
-        <div className="card bg-light mt-8">
-          <h2 className="text-2xl font-bold mb-6 text-center">探索更多功能</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Link 
-              href="/local-video"
-              className="group p-6 border-3 border-black bg-white hover:bg-accent hover:text-light transition-all duration-200 transform hover:rotate-1"
-            >
-              <div className="flex items-center mb-4">
-                <div className="bg-accent group-hover:bg-light group-hover:text-black text-light w-12 h-12 rounded-full flex items-center justify-center mr-4 border-3 border-black">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold">本地视频转PPT</h3>
+                  <div className="flex items-center mb-4">
+                    <div className="bg-primary group-hover:bg-light group-hover:text-black text-light w-12 h-12 rounded-full flex items-center justify-center mr-4 border-3 border-black">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-bold">{useTranslations('OnlineVideo')('title')}</h3>
+                  </div>
+                  <p className="text-gray-600 group-hover:text-light">
+                    {useTranslations('OnlineVideo')('description')}
+                  </p>
+                </Link>
               </div>
-              <p className="text-gray-600 group-hover:text-light">
-                上传本地视频文件快速转换为PPT，支持多种视频格式，隐私安全
-              </p>
-            </Link>
-            
-            <Link 
-              href="/online-video"
-              className="group p-6 border-3 border-black bg-white hover:bg-primary hover:text-light transition-all duration-200 transform hover:rotate-1"
-            >
-              <div className="flex items-center mb-4">
-                <div className="bg-primary group-hover:bg-light group-hover:text-black text-light w-12 h-12 rounded-full flex items-center justify-center mr-4 border-3 border-black">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                  </svg>
-                </div>
-                <h3 className="text-xl font-bold">在线视频转PPT</h3>
-              </div>
-              <p className="text-gray-600 group-hover:text-light">
-                从YouTube、Bilibili等平台直接转换视频为PPT，支持多种在线视频源
-              </p>
-            </Link>
-          </div>
-        </div>
+            </div>
+          </>
+        )}
       </div>
     </main>
   )

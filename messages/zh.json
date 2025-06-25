@@ -120,6 +120,16 @@
     "title": "实时录屏转PPT",
     "screenRecording": "屏幕录制",
     "description": "点击开始录制后，请选择「整个屏幕」选项开始录制。系统将自动录制屏幕画面和系统音频。",
+    "mobileNotSupported": "不支持移动设备",
+    "useDeskTopBrowser": "请在桌面端浏览器使用录屏功能",
+    "mobileNotice": "录屏功能需要桌面环境，请在电脑上访问此页面。",
+    "whyDesktopOnly": "为什么只支持桌面端？",
+    "desktopReasons": [
+      "屏幕录制API仅在桌面浏览器中可用",
+      "视频处理具有更好的性能和稳定性",
+      "全屏捕获需要桌面环境"
+    ],
+    "exploreOtherFeatures": "探索其他功能",
     "readyToRecord": "准备开始全屏录制",
     "selectFullScreen": "点击开始录制后，请在弹窗中选择「整个屏幕」",
     "processing": "处理中...",
