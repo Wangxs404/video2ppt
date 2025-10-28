@@ -33,7 +33,7 @@
 1. **克隆仓库**
 
    ```bash
-   git clone https://github.com/AxisIndie/video2ppt.git
+   git clone https://github.com/Wangxs404/video2ppt.git
    cd video2ppt
    ```
 2. **安装依赖**
@@ -200,7 +200,7 @@ video2ppt/
 如需商业使用，请联系版权持有者获取商业许可：
 
 - 📧 **联系方式**: wangxs1995s@gmail.com
-- 🔗 **GitHub**: https://github.com/AxisIndie/video2ppt
+- 🔗 **GitHub**: https://github.com/Wangxs404/video2ppt  
 - 💼 **商业咨询**: 提供灵活的商业许可方案
 
 ### 完整许可证

@@ -33,7 +33,7 @@ A free, privacy-focused online tool that converts videos from any source into Po
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/AxisIndie/video2ppt.git
+   git clone https://github.com/wangxs404/video2ppt.git
    cd video2ppt
    ```
 2. **Install dependencies**
@@ -185,7 +185,7 @@ This project **strictly prohibits commercial use**, including but not limited to
 For commercial use, please contact the copyright holder for a commercial license:
 
 - 📧 **Contact**: wangxs1995s@gmail.com
-- 🔗 **GitHub**: https://github.com/AxisIndie/video2ppt
+- 🔗 **GitHub**: https://github.com/Wangxs404/video2ppt
 - 💼 **Business Inquiries**: Flexible commercial licensing available
 
 ### Full License
