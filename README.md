@@ -40,36 +40,27 @@ pip install -r requirements.txt
 
 ```bash
 # 最简单的方式
-python3 video2ppt.py video.mp4
+python3 main.py video.mp4
 
 # 指定输出文件和帧提取间隔
-python3 video2ppt.py video.mp4 -o output.pptx -i 10
+python3 main.py video.mp4 -o output.pptx -i 10
 
 # 查看所有选项
-python3 video2ppt.py -h
+python3 main.py -h
 ```
 
 ## 📋 使用示例
 
 ### 快速预览（处理最快）
 ```bash
-python3 video2ppt.py video.mp4 -i 20
+python3 main.py video.mp4 -i 20
 ```
 
 ### 标准转换（推荐）⭐
 ```bash
-python3 video2ppt.py video.mp4 -i 10 -o output.pptx
+python3 main.py video.mp4 -i 10 -o output.pptx
 ```
 
-### 详细记录
-```bash
-python3 video2ppt.py video.mp4 -i 5
-```
-
-### 超详细（每秒一帧）
-```bash
-python3 video2ppt.py video.mp4 -i 1
-```
 
 ## 📊 性能指标
 
@@ -84,8 +75,6 @@ python3 video2ppt.py video.mp4 -i 1
 ## 📖 文档
 
 - [README.md](README.md) - 完整使用文档
-- [QUICKSTART.md](QUICKSTART.md) - 5分钟快速开始指南
-- [CONTRIBUTING.md](CONTRIBUTING.md) - 贡献指南
 - [LICENSE](LICENSE) - MIT 许可证
 
 ## 🛠️ 技术栈
@@ -95,27 +84,6 @@ python3 video2ppt.py video.mp4 -i 1
 - **Pillow** - 图像处理
 - **NumPy** - 数值计算
 
-## 🤝 贡献
-
-我们欢迎所有贡献！请参阅 [CONTRIBUTING.md](CONTRIBUTING.md) 了解详情。
-
-### 快速开始开发
-
-```bash
-# Fork 和克隆仓库
-git clone https://github.com/yourusername/video2ppt.git
-cd video2ppt
-
-# 创建功能分支
-git checkout -b feature/your-feature
-
-# 提交更改
-git add .
-git commit -m "Add your changes"
-git push origin feature/your-feature
-
-# 创建 Pull Request
-```
 
 ## 🐛 报告问题
 
@@ -132,28 +100,10 @@ A: 增大 `-i` 参数值，例如 `-i 20` 会比 `-i 5` 快 4 倍
 ### Q: 如何减少文件大小？
 A: 使用较大的帧提取间隔，例如 `-i 10` 会比 `-i 5` 小 90%
 
-## 📈 路线图
-
-- [ ] 支持多线程处理
-- [ ] 添加图像质量调整选项
-- [ ] 支持自定义 PPT 主题
-- [ ] 添加 GUI 界面
-- [ ] 支持音频提取
-- [ ] 支持从 URL 处理视频
-
-## 📝 更新日志
-
-### v2.0.0 (2025-11-03)
-- ✨ 移除 OCR 功能，提升处理速度 3.2 倍
-- 🖼️ 图片占满整个幻灯片页面
-- 📦 文件大小减少 2.4 倍
-- 🚀 性能大幅提升
-
 ### v1.0.0 (2025-11-03)
 - 初始版本发布
 
 ## 📜 许可证
-
 本项目采用 MIT License - 详见 [LICENSE](LICENSE) 文件
 
 
