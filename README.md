@@ -1,215 +1,179 @@
-# Video2PPT - Knowledge Snapshots, Wisdom Preserved
+# 🎬 Video2PPT - 视频转PowerPoint工具
 
-> 🇺🇸 English | [🇨🇳 中文](README_zh.md)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.7+](https://img.shields.io/badge/Python-3.7%2B-blue)](https://www.python.org/downloads/)
+[![Open Source](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)](https://github.com/yourusername/video2ppt)
 
-![License](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)
-![Next.js](https://img.shields.io/badge/Next.js-14.1.0-black)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.2.2-blue)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-3.3.3-38B2AC)
-
-A free, privacy-focused online tool that converts videos from any source into PowerPoint presentations. Extract key insights from local video files, online video links, or live screen recordings to generate beautiful PPT documents.
-
-🌐 **Live Demo**: [video2ppt.com](https://video2ppt.com)
-
-## ✨ Features
-
-- **🎥 Multi-Source Support**: Process local video files, online video URLs, or live screen recordings
-- **⚡ Real-Time Processing**: Generate PPT slides while watching videos - perfect for meetings, webinars, and online courses
-- **🔒 Privacy First**: All processing happens locally in your browser - no video uploads, complete data privacy
-- **🆓 Completely Free**: Full functionality with no ads or premium tiers
-- **🤖 AI-Powered**: Intelligent content extraction and structured PPT generation
-- **🌍 Multilingual**: Support for English and Chinese interfaces
-- **📱 Responsive Design**: Works seamlessly across desktop, tablet, and mobile devices
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- Node.js 18+
-- npm, yarn, or pnpm
-
-### Installation
-
-1. **Clone the repository**
-
-   ```bash
-   git clone https://github.com/wangxs404/video2ppt.git
-   cd video2ppt
-   ```
-2. **Install dependencies**
-
-   ```bash
-   npm install
-   # or
-   yarn install
-   # or
-   pnpm install
-   ```
-3. **Start development server**
-
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   # or
-   pnpm dev
-   ```
-4. **Open your browser**
-
-   Navigate to [http://localhost:3000](http://localhost:3000)
-
-## 🏗️ Tech Stack
-
-### Frontend
-
-- **Framework**: Next.js 14 (App Router)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **Components**: Shadcn UI, Radix UI
-- **Design**: Neo-brutalism style
-- **Animations**: Framer Motion
-- **Internationalization**: next-intl
-
-### Core Libraries
-
-- **Video Processing**: FFmpeg.wasm
-- **PPT Generation**: PptxGenJS
-- **File Handling**: File-saver, JSZip
-- **WebSocket**: ws
-
-### Development Tools
-
-- **Linting**: ESLint
-- **Package Manager**: pnpm
-- **Build Tool**: Next.js built-in
-
-## 📖 Usage
-
-### 1. Local Video Processing
-
-- Upload video files from your device
-- Supports common formats (MP4, AVI, MOV, etc.)
-- Process and extract key frames and content
-
-### 2. Online Video Processing
-
-- Paste video URLs from popular platforms
-- Automatic content extraction and analysis
-- Generate structured presentations
-
-### 3. Screen Recording
-
-- Real-time screen capture
-- Live PPT generation during recording
-- Perfect for live presentations and tutorials
-
-## 🎯 Use Cases
-
-- **📹 Meeting Documentation**: Extract key points from recorded meetings for easy sharing
-- **📚 Educational Content**: Transform lengthy educational videos into concise study materials
-- **🎓 Conference Notes**: Capture expert insights from seminars and workshops
-- **💼 Training Materials**: Convert training videos into reusable presentation formats
-- **📝 Content Summarization**: Create executive summaries from video content
-
-## 🏗️ Project Structure
-
-```
-video2ppt/
-├── app/                          # Next.js app directory
-│   ├── [locale]/                 # Internationalized routes
-│   │   ├── local-video/         # Local video processing
-│   │   ├── online-video/        # Online video processing
-│   │   └── screen-recording/    # Screen recording feature
-│   ├── api/                     # API routes
-│   └── utils/                   # Utility functions
-├── components/                   # Reusable UI components
-├── hooks/                       # Custom React hooks
-├── messages/                    # Internationalization files
-│   ├── en.json                  # English translations
-│   └── zh.json                  # Chinese translations
-├── public/                      # Static assets
-└── ...config files
-```
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
-## 📋 Roadmap
-
-- [ ] **Enhanced AI Processing**: Improved content extraction algorithms
-- [ ] **More Export Formats**: Support for Google Slides, Keynote
-- [ ] **Cloud Storage Integration**: Direct export to cloud services
-- [ ] **Advanced Templates**: More professional PPT templates
-- [ ] **Collaboration Features**: Real-time collaborative editing
-- [ ] **API Access**: RESTful API for developers
-
-## 🐛 Bug Reports & Feature Requests
-
-Found a bug? Have a feature idea? Please use our [Issue Templates](.github/ISSUE_TEMPLATE/):
-
-- [🐛 Bug Report](.github/ISSUE_TEMPLATE/bug_report.md)
-- [✨ Feature Request](.github/ISSUE_TEMPLATE/feature_request.md)
-
-## 📄 License
-
-**⚠️ Important: This project is licensed under CC BY-NC-SA 4.0**
-
-[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
-
-### You are free to:
-
-- ✅ **Share** — Copy and redistribute the material in any medium or format
-- ✅ **Adapt** — Remix, transform, and build upon the material
-- ✅ **Personal Use** — Use for learning, education, and research
-- ✅ **Non-profit Use** — Use in non-profit organizations
-
-### Under the following terms:
-
-- 📝 **Attribution** — Give appropriate credit, provide a link to the license, and indicate if changes were made
-- 🚫 **NonCommercial** — You may not use the material for commercial purposes
-- 🔄 **ShareAlike** — If you remix, transform, or build upon the material, you must distribute your contributions under the same license
-
-### Commercial Use Prohibited
-
-This project **strictly prohibits commercial use**, including but not limited to:
-
-- ❌ Selling the software or derivatives
-- ❌ Using in commercial products or services
-- ❌ Profit-generating activities
-- ❌ Integration into commercial software
-- ❌ Providing paid services based on this software
-
-### Commercial Licensing
-
-For commercial use, please contact the copyright holder for a commercial license:
-
-- 📧 **Contact**: wangxs1995s@gmail.com
-- 🔗 **GitHub**: https://github.com/Wangxs404/video2ppt
-- 💼 **Business Inquiries**: Flexible commercial licensing available
-
-### Full License
-
-- 📄 **License Text**: [Creative Commons BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/)
-- 📋 **Legal Code**: [Complete Legal Text](https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode)
-- 📖 **Local File**: See [LICENSE](./LICENSE) for detailed terms
-
-## 🙏 Acknowledgments
-
-- [Next.js](https://nextjs.org/) team for the amazing framework
-- [FFmpeg.wasm](https://ffmpegwasm.netlify.app/) for client-side video processing
-- [Shadcn UI](https://ui.shadcn.com/) for beautiful components
-- [Tailwind CSS](https://tailwindcss.com/) for utility-first styling
-
-## 📞 Support & Contact
-
-- 🌐 **Website**: [video2ppt.com](https://video2ppt.com)
-- 📧 **Email**: wangxs1995s@gmail.com
-- 🐙 **GitHub**: [Wangxs404/video2ppt](https://github.com/wangxs404/video2ppt)
-- 💬 **Issues**: [GitHub Issues](https://github.com/wangxs404/video2ppt/issues)
+🚀 **[快速开始](https://video2ppt.com)** | 📖 [完整文档](QUICKSTART.md) | 💬 [GitHub Issues](https://github.com/yourusername/video2ppt/issues)
 
 ---
 
-**Copyright (c) 2025 Video2PPT - Licensed under CC BY-NC-SA 4.0**
+将视频文件自动转换为 PowerPoint 演示文稿。该工具从视频中提取关键帧，生成精美的 PowerPoint 演示文稿。
 
-Made with ❤️ by the Video2PPT team
+## ✨ 功能特性
+
+- 🎬 **视频帧提取** - 从视频中自动提取关键帧
+- 📊 **PPT 生成** - 生成精美的 PowerPoint 演示文稿
+- ⏱️ **灵活配置** - 支持自定义帧提取间隔
+- 🚀 **高效处理** - 处理速度快，文件大小小
+- 🖼️ **专业布局** - 图片占满整个幻灯片页面
+- 📋 **自动清理** - 自动清理临时文件
+
+## 🚀 快速开始
+
+### 前置要求
+
+- Python 3.7+
+
+### 安装
+
+```bash
+# 克隆仓库
+git clone https://github.com/yourusername/video2ppt.git
+cd video2ppt
+
+# 创建虚拟环境（推荐）
+python3 -m venv venv
+source venv/bin/activate  # macOS/Linux
+# 或
+venv\Scripts\activate  # Windows
+
+# 安装依赖
+pip install -r requirements.txt
+```
+
+### 基本使用
+
+```bash
+# 最简单的方式
+python3 video2ppt.py video.mp4
+
+# 指定输出文件和帧提取间隔
+python3 video2ppt.py video.mp4 -o output.pptx -i 10
+
+# 查看所有选项
+python3 video2ppt.py -h
+```
+
+## 📋 使用示例
+
+### 快速预览（处理最快）
+```bash
+python3 video2ppt.py video.mp4 -i 20
+```
+
+### 标准转换（推荐）⭐
+```bash
+python3 video2ppt.py video.mp4 -i 10 -o output.pptx
+```
+
+### 详细记录
+```bash
+python3 video2ppt.py video.mp4 -i 5
+```
+
+### 超详细（每秒一帧）
+```bash
+python3 video2ppt.py video.mp4 -i 1
+```
+
+## 📊 性能指标
+
+| 参数 | 处理时间 | 文件大小 | 幻灯片数 |
+|------|---------|--------|--------|
+| -i 10 | ~14.5 秒 | ~17 MB | ~225 张 |
+| -i 5 | ~28 秒 | ~33 MB | ~449 张 |
+| -i 1 | ~90+ 秒 | ~80+ MB | ~2237 张 |
+
+*测试基于 76MB、37分钟的 MP4 视频*
+
+## 📖 文档
+
+- [README.md](README.md) - 完整使用文档
+- [QUICKSTART.md](QUICKSTART.md) - 5分钟快速开始指南
+- [CONTRIBUTING.md](CONTRIBUTING.md) - 贡献指南
+- [LICENSE](LICENSE) - MIT 许可证
+
+## 🛠️ 技术栈
+
+- **OpenCV** - 视频处理
+- **python-pptx** - PowerPoint 生成
+- **Pillow** - 图像处理
+- **NumPy** - 数值计算
+
+## 🤝 贡献
+
+我们欢迎所有贡献！请参阅 [CONTRIBUTING.md](CONTRIBUTING.md) 了解详情。
+
+### 快速开始开发
+
+```bash
+# Fork 和克隆仓库
+git clone https://github.com/yourusername/video2ppt.git
+cd video2ppt
+
+# 创建功能分支
+git checkout -b feature/your-feature
+
+# 提交更改
+git add .
+git commit -m "Add your changes"
+git push origin feature/your-feature
+
+# 创建 Pull Request
+```
+
+## 🐛 报告问题
+
+如果您发现了 bug 或有建议，请在 [Issues](https://github.com/yourusername/video2ppt/issues) 中创建新的 Issue。
+
+## 💡 常见问题
+
+### Q: 支持哪些视频格式？
+A: 支持 OpenCV 支持的大多数格式（MP4、AVI、MOV、MKV、FLV、WMV 等）
+
+### Q: 如何加快处理速度？
+A: 增大 `-i` 参数值，例如 `-i 20` 会比 `-i 5` 快 4 倍
+
+### Q: 如何减少文件大小？
+A: 使用较大的帧提取间隔，例如 `-i 10` 会比 `-i 5` 小 90%
+
+## 📈 路线图
+
+- [ ] 支持多线程处理
+- [ ] 添加图像质量调整选项
+- [ ] 支持自定义 PPT 主题
+- [ ] 添加 GUI 界面
+- [ ] 支持音频提取
+- [ ] 支持从 URL 处理视频
+
+## 📝 更新日志
+
+### v2.0.0 (2025-11-03)
+- ✨ 移除 OCR 功能，提升处理速度 3.2 倍
+- 🖼️ 图片占满整个幻灯片页面
+- 📦 文件大小减少 2.4 倍
+- 🚀 性能大幅提升
+
+### v1.0.0 (2025-11-03)
+- 初始版本发布
+
+## 📞 联系方式
+
+- 📧 Email: your.email@example.com
+- 🐦 Twitter: [@yourusername](https://twitter.com/yourusername)
+- 💬 讨论: [GitHub Discussions](https://github.com/yourusername/video2ppt/discussions)
+
+## 📜 许可证
+
+本项目采用 MIT License - 详见 [LICENSE](LICENSE) 文件
+
+## 🙏 致谢
+
+感谢所有贡献者和使用者的支持！
+
+---
+
+**让我们一起让 Video2PPT 变得更好！** 🚀
+
+如有任何问题或建议，欢迎提交 Issue 或 PR。
