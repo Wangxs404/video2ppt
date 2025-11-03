@@ -2,9 +2,9 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.7+](https://img.shields.io/badge/Python-3.7%2B-blue)](https://www.python.org/downloads/)
-[![Open Source](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)](https://github.com/yourusername/video2ppt)
+[![Open Source](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)](https://github.com/wangxs404/video2ppt)
 
-🚀 **[快速开始](https://video2ppt.com)** | 📖 [完整文档](QUICKSTART.md) | 💬 [GitHub Issues](https://github.com/yourusername/video2ppt/issues)
+🚀 **[快速开始](https://video2ppt.com)** | 📖 [完整文档](QUICKSTART.md) | 💬 [GitHub Issues](https://github.com/wangxs404/video2ppt/issues)
 
 ---
 
@@ -29,14 +29,8 @@
 
 ```bash
 # 克隆仓库
-git clone https://github.com/yourusername/video2ppt.git
+git clone https://github.com/wangxs404/video2ppt.git
 cd video2ppt
-
-# 创建虚拟环境（推荐）
-python3 -m venv venv
-source venv/bin/activate  # macOS/Linux
-# 或
-venv\Scripts\activate  # Windows
 
 # 安装依赖
 pip install -r requirements.txt
@@ -125,7 +119,7 @@ git push origin feature/your-feature
 
 ## 🐛 报告问题
 
-如果您发现了 bug 或有建议，请在 [Issues](https://github.com/yourusername/video2ppt/issues) 中创建新的 Issue。
+如果您发现了 bug 或有建议，请在 [Issues](https://github.com/wangxs404/video2ppt/issues) 中创建新的 Issue。
 
 ## 💡 常见问题
 
@@ -158,22 +152,11 @@ A: 使用较大的帧提取间隔，例如 `-i 10` 会比 `-i 5` 小 90%
 ### v1.0.0 (2025-11-03)
 - 初始版本发布
 
-## 📞 联系方式
-
-- 📧 Email: your.email@example.com
-- 🐦 Twitter: [@yourusername](https://twitter.com/yourusername)
-- 💬 讨论: [GitHub Discussions](https://github.com/yourusername/video2ppt/discussions)
-
 ## 📜 许可证
 
 本项目采用 MIT License - 详见 [LICENSE](LICENSE) 文件
 
-## 🙏 致谢
-
-感谢所有贡献者和使用者的支持！
 
 ---
 
-**让我们一起让 Video2PPT 变得更好！** 🚀
 
-如有任何问题或建议，欢迎提交 Issue 或 PR。
