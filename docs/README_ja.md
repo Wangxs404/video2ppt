@@ -4,7 +4,7 @@
 [![Python 3.7+](https://img.shields.io/badge/Python-3.7%2B-blue)](https://www.python.org/downloads/)
 [![Open Source](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)](https://github.com/wangxs404/video2ppt)
 
-🚀 **[クイックスタート](#クイックスタート)** | 📖 **[完全なドキュメント](#ドキュメント)** | 💬 **[GitHub Issues](https://github.com/wangxs404/video2ppt/issues)** | 🌍 **[メインに戻る](../README.md)**
+🚀 **[クイックスタートガイド](https://video2ppt.com)** | 🏠 **[メインに戻る](../README.md)** | 💬 **[GitHub Issues](https://github.com/wangxs404/video2ppt/issues)**
 
 ---
 
@@ -51,6 +51,8 @@ python3 main.py video.mp4 -i 10
 # すべての利用可能なオプションを表示
 python3 main.py -h
 ```
+
+> **📚 より詳細なガイドとコツについては、[video2ppt.com](https://video2ppt.com) をご覧ください**
 
 ## 📋 使用例
 
@@ -200,9 +202,12 @@ pip install python-pptx
 ## 🔗 リンク
 
 - [GitHub リポジトリ](https://github.com/wangxs404/video2ppt)
+- [クイックスタートガイド](https://video2ppt.com)
 - [GitHub Issues](https://github.com/wangxs404/video2ppt/issues)
 - [MIT ライセンス](https://opensource.org/licenses/MIT)
 
 ---
+
+**より多くのチュートリアルとガイドについては、[video2ppt.com](https://video2ppt.com) をご覧ください**
 
 **最終更新:** 2025-11-03

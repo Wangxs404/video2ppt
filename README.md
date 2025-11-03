@@ -6,6 +6,8 @@
 
 **Automatically convert video files to PowerPoint presentations.**
 
+🌐 **[Visit QuickStart](https://video2ppt.com)** | 📖 **[Full Documentation](#-documentation)** | 💬 **[GitHub Issues](https://github.com/wangxs404/video2ppt/issues)**
+
 ## 🌍 Documentation / 文档 / ドキュメント / Documentación
 
 - 🇺🇸 [English](docs/README_en.md)
@@ -30,6 +32,8 @@ python3 main.py video.mp4 -i 5 -o output.pptx
 # View all options
 python3 main.py -h
 ```
+
+**👉 [Learn more at video2ppt.com](https://video2ppt.com)**
 
 ## ✨ Key Features
 
@@ -71,3 +75,5 @@ For questions, issues, or suggestions: [GitHub Issues](https://github.com/wangxs
 ---
 
 **For detailed documentation, please select your language above / 详细文档请选择上方语言**
+
+**[👉 Visit video2ppt.com for interactive demo and guides](https://video2ppt.com)**

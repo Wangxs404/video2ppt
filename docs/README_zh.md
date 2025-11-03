@@ -4,7 +4,7 @@
 [![Python 3.7+](https://img.shields.io/badge/Python-3.7%2B-blue)](https://www.python.org/downloads/)
 [![Open Source](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)](https://github.com/wangxs404/video2ppt)
 
-🚀 **[快速开始](#快速开始)** | 📖 **[完整文档](#文档)** | 💬 **[GitHub Issues](https://github.com/wangxs404/video2ppt/issues)** | 🌍 **[返回主文档](../README.md)**
+🚀 **[快速开始指南](https://video2ppt.com)** | 🏠 **[返回主文档](../README.md)** | 💬 **[GitHub Issues](https://github.com/wangxs404/video2ppt/issues)**
 
 ---
 
@@ -51,6 +51,8 @@ python3 main.py video.mp4 -i 10
 # 查看所有可用选项
 python3 main.py -h
 ```
+
+> **📚 更多详细指南和技巧，请访问 [video2ppt.com](https://video2ppt.com)**
 
 ## 📋 使用示例
 
@@ -200,9 +202,12 @@ pip install python-pptx
 ## 🔗 链接
 
 - [GitHub 仓库](https://github.com/wangxs404/video2ppt)
+- [快速开始指南](https://video2ppt.com)
 - [GitHub Issues](https://github.com/wangxs404/video2ppt/issues)
 - [MIT 许可证](https://opensource.org/licenses/MIT)
 
 ---
+
+**更多教程和指南，请访问 [video2ppt.com](https://video2ppt.com)**
 
 **最后更新:** 2025-11-03

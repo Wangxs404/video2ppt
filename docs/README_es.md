@@ -4,7 +4,7 @@
 [![Python 3.7+](https://img.shields.io/badge/Python-3.7%2B-blue)](https://www.python.org/downloads/)
 [![Open Source](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)](https://github.com/wangxs404/video2ppt)
 
-🚀 **[Inicio Rápido](#inicio-rápido)** | 📖 **[Documentación Completa](#documentación)** | 💬 **[GitHub Issues](https://github.com/wangxs404/video2ppt/issues)** | 🌍 **[Volver al Principal](../README.md)**
+🚀 **[Guía de Inicio Rápido](https://video2ppt.com)** | 🏠 **[Volver al Principal](../README.md)** | 💬 **[GitHub Issues](https://github.com/wangxs404/video2ppt/issues)**
 
 ---
 
@@ -51,6 +51,8 @@ python3 main.py video.mp4 -i 10
 # Ver todas las opciones disponibles
 python3 main.py -h
 ```
+
+> **📚 Para más guías y consejos detallados, visite [video2ppt.com](https://video2ppt.com)**
 
 ## 📋 Ejemplos de Uso
 
@@ -200,9 +202,12 @@ Este proyecto está licenciado bajo la Licencia MIT - ver el archivo [LICENSE](.
 ## 🔗 Enlaces
 
 - [Repositorio de GitHub](https://github.com/wangxs404/video2ppt)
+- [Guía de Inicio Rápido](https://video2ppt.com)
 - [GitHub Issues](https://github.com/wangxs404/video2ppt/issues)
 - [Licencia MIT](https://opensource.org/licenses/MIT)
 
 ---
+
+**Para más tutoriales y guías, visite [video2ppt.com](https://video2ppt.com)**
 
 **Última Actualización:** 2025-11-03
