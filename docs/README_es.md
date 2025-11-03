@@ -8,11 +8,11 @@
 
 ---
 
-Convierta archivos de video automáticamente en presentaciones de PowerPoint. Esta herramienta extrae fotogramas clave de videos y genera hermosas presentaciones de PowerPoint.
+Convierta archivos de video automáticamente en presentaciones de PowerPoint. Esta herramienta extrae fotogramas de videos a intervalos de tiempo especificados y genera hermosas presentaciones de PowerPoint.
 
 ## ✨ Características
 
-- 🎬 **Extracción de Fotogramas de Video** - Extrae automáticamente fotogramas clave de videos
+- 🎬 **Extracción de Fotogramas de Video** - Extrae automáticamente fotogramas a intervalos de tiempo especificados (en segundos)
 - 📊 **Generación de PPT** - Genera hermosas presentaciones de PowerPoint
 - ⏱️ **Configuración Flexible** - Admite intervalos de extracción de fotogramas personalizables
 - 🚀 **Alto Rendimiento** - Procesamiento rápido con tamaños de archivo pequeños
@@ -24,12 +24,11 @@ Convierta archivos de video automáticamente en presentaciones de PowerPoint. Es
 ### Requisitos
 
 - Python 3.7+
-- FFmpeg (opcional, para procesamiento avanzado de video)
 
 ### Instalación
 
 ```bash
-# Clonar el repositorio
+# Clonar repositorio
 git clone https://github.com/wangxs404/video2ppt.git
 cd video2ppt
 
@@ -40,81 +39,94 @@ pip install -r requirements.txt
 ### Uso Básico
 
 ```bash
-# Forma más simple - usar configuración predeterminada
-python3 video2ppt.py video.mp4
+# Predeterminado: extraer 1 fotograma por segundo
+python3 main.py video.mp4
 
-# Especificar archivo de salida e intervalo de extracción de fotogramas
-python3 video2ppt.py video.mp4 -o output.pptx -i 10
+# Extraer 1 fotograma cada 5 segundos
+python3 main.py video.mp4 -i 5 -o output.pptx
+
+# Extraer 1 fotograma cada 10 segundos (modo rápido)
+python3 main.py video.mp4 -i 10
 
 # Ver todas las opciones disponibles
-python3 video2ppt.py -h
+python3 main.py -h
 ```
 
 ## 📋 Ejemplos de Uso
 
-### Vista Previa Rápida (Procesamiento Más Rápido)
+### Ejemplo 1: Vista Previa Rápida (Procesamiento Más Rápido)
 ```bash
-python3 video2ppt.py video.mp4 -i 20
+python3 main.py video.mp4 -i 10
 ```
-- Intervalo: Cada 20 fotogramas
-- Resultado: Menos diapositivas, tamaño de archivo más pequeño, procesamiento más rápido
+- Intervalo: Extraer 1 fotograma cada 10 segundos
+- Resultado: Menos diapositivas, tamaño de archivo más pequeño, procesamiento más rápido (~7 segundos)
 
-### Conversión Estándar (Recomendado) ⭐
+### Ejemplo 2: Conversión Estándar (Recomendado) ⭐
 ```bash
-python3 video2ppt.py video.mp4 -i 10 -o output.pptx
+python3 main.py video.mp4 -i 5 -o output.pptx
 ```
-- Intervalo: Cada 10 fotogramas
-- Resultado: Calidad y tamaño de archivo equilibrados
+- Intervalo: Extraer 1 fotograma cada 5 segundos
+- Resultado: Calidad y tamaño de archivo equilibrados (~14 segundos)
 
-### Alta Calidad (Más Diapositivas)
+### Ejemplo 3: Conversión de Alta Calidad (Más Detalle)
 ```bash
-python3 video2ppt.py video.mp4 -i 5 -o output_hq.pptx
+python3 main.py video.mp4 -i 2 -o detailed.pptx
 ```
-- Intervalo: Cada 5 fotogramas
-- Resultado: Más diapositivas, archivo más grande, mejor calidad
+- Intervalo: Extraer 1 fotograma cada 2 segundos
+- Resultado: Más diapositivas, archivo más grande, mejor calidad (~28 segundos)
+
+### Ejemplo 4: Modo Predeterminado (Máximo Detalle)
+```bash
+python3 main.py video.mp4 -i 1 -o maximum.pptx
+```
+- Intervalo: Extraer 1 fotograma cada 1 segundo (predeterminado)
+- Resultado: Máximo fotogramas, archivo más grande (~55 segundos para video de 37 minutos)
 
 ## 📊 Métricas de Rendimiento
 
-| Parámetro | Tiempo de Procesamiento | Tamaño de Archivo | Cantidad de Diapositivas |
-|-----------|------------------------|-------------------|------------------------|
-| -i 10 | ~14.5 segundos | ~17 MB | ~225 diapositivas |
-| -i 5 | ~28 segundos | ~33 MB | ~449 diapositivas |
-| -i 1 | ~90+ segundos | ~80+ MB | ~2237 diapositivas |
+Basado en video MP4 de 76MB, 37 minutos:
 
-*Prueba basada en video MP4 de 76MB, 37 minutos*
+| Intervalo (segundos) | Fotogramas/Segundo | Tiempo de Procesamiento | Tamaño de Archivo | Cantidad de Diapositivas |
+|---------------------|-------------------|------------------------|-------------------|------------------------|
+| -i 10 | 0.1 fps | ~7 segundos | ~9 MB | ~222 diapositivas |
+| -i 5 | 0.2 fps | ~14 segundos | ~17 MB | ~444 diapositivas |
+| -i 2 | 0.5 fps | ~28 segundos | ~33 MB | ~1110 diapositivas |
+| -i 1 | 1.0 fps | ~55 segundos | ~80+ MB | ~2220 diapositivas |
+
+**Recomendación:** Use `-i 5` para el mejor equilibrio entre calidad y tamaño de archivo.
 
 ## 📖 Documentación
 
 ### Opciones de Línea de Comandos
 
 ```
-uso: video2ppt.py [-h] [-o SALIDA] [-i INTERVALO] video_entrada
+uso: main.py [-h] [-o SALIDA] [-i INTERVALO] video
 
 argumentos posicionales:
-  video_entrada         Ruta del archivo de video de entrada
+  video                 Ruta del archivo de video de entrada
 
 argumentos opcionales:
-  -h, --help           Mostrar mensaje de ayuda y salir
-  -o, --output SALIDA  Ruta del archivo PowerPoint de salida (predeterminado: output.pptx)
+  -h, --help           Mostrar este mensaje de ayuda y salir
+  -o, --output SALIDA  Ruta del archivo PowerPoint de salida (predeterminado: video_name_output.pptx)
   -i, --interval INTERVALO
-                       Intervalo de extracción de fotogramas (predeterminado: 10)
+                       Intervalo de extracción de fotogramas en segundos (predeterminado: 1)
 ```
 
-### Ejemplos con Diferentes Formatos
+### Ejemplos con Diferentes Formatos de Video
 
 **Video MP4**
 ```bash
-python3 video2ppt.py lecture.mp4 -o lecture.pptx
+python3 main.py lecture.mp4 -o lecture.pptx
 ```
 
 **Video AVI**
 ```bash
-python3 video2ppt.py presentation.avi -o presentation.pptx
+python3 main.py presentation.avi -o presentation.pptx -i 3
 ```
 
 **Video MOV (Mac)**
 ```bash
-python3 video2ppt.py video.mov -o output.pptx
+python3 main.py video.mov -o output.pptx -i 2
 ```
 
 ## 🛠️ Stack Tecnológico
@@ -129,14 +141,17 @@ python3 video2ppt.py video.mov -o output.pptx
 ### P: ¿Qué formatos de video son compatibles?
 R: La mayoría de formatos compatibles con OpenCV (MP4, AVI, MOV, MKV, FLV, WMV, etc.)
 
+### P: ¿Cómo funcionan los intervalos?
+R: El parámetro `-i` especifica segundos entre fotogramas. Por ejemplo, `-i 5` significa extraer 1 fotograma cada 5 segundos.
+
 ### P: ¿Cómo puedo acelerar el procesamiento?
-R: Aumente el valor del parámetro `-i`. Por ejemplo, `-i 20` será 4 veces más rápido que `-i 5`
+R: Aumente el valor del parámetro `-i`. Por ejemplo, `-i 10` será 5 veces más rápido que `-i 2` pero extraerá menos fotogramas.
 
 ### P: ¿Cómo puedo reducir el tamaño del archivo?
-R: Use un intervalo de extracción de fotogramas más grande. Por ejemplo, `-i 10` resultará en archivos ~90% más pequeños comparado con `-i 5`
+R: Use un intervalo de extracción de fotogramas más grande. Por ejemplo, `-i 10` produce archivos ~90% más pequeños comparado con `-i 1`.
 
 ### P: ¿Puedo personalizar el diseño de la diapositiva?
-R: Actualmente, la herramienta usa un diseño estándar. Los diseños personalizados serán compatibles en versiones futuras.
+R: Actualmente, la herramienta usa un diseño estándar de imagen de diapositiva completa. Los diseños personalizados serán compatibles en versiones futuras.
 
 ### P: ¿Cuál es la duración máxima de video compatible?
 R: No hay un límite estricto, pero el tiempo de procesamiento depende de la duración del video y del parámetro de intervalo.
@@ -144,8 +159,8 @@ R: No hay un límite estricto, pero el tiempo de procesamiento depende de la dur
 ### P: ¿Requiere conexión a Internet?
 R: No, todo el procesamiento se realiza localmente en su máquina.
 
-### P: ¿Puedo ejecutar esto en macOS/Linux?
-R: Sí, esta herramienta es multiplataforma y funciona en Windows, macOS y Linux.
+### P: ¿Puedo ejecutar esto en macOS/Linux/Windows?
+R: Sí, esta herramienta es multiplataforma y funciona en todos los sistemas.
 
 ## 🐛 Solución de Problemas
 
@@ -170,8 +185,8 @@ pip install python-pptx
 
 ### v1.0.0 (2025-11-03)
 - Versión inicial
-- Conversión básica de video a PowerPoint
-- Extracción de fotogramas con intervalos personalizables
+- Conversión de video a PowerPoint con extracción de fotogramas basada en tiempo
+- Extracción de fotogramas a intervalos de tiempo personalizables (en segundos)
 - Compatibilidad con múltiples formatos de video
 
 ## 🤝 Contribuyendo

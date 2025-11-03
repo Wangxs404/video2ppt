@@ -8,11 +8,11 @@
 
 ---
 
-将视频文件自动转换为 PowerPoint 演示文稿。该工具从视频中提取关键帧，生成精美的 PowerPoint 演示文稿。
+将视频文件自动转换为 PowerPoint 演示文稿。该工具按指定的时间间隔从视频中提取帧，生成精美的 PowerPoint 演示文稿。
 
 ## ✨ 功能特性
 
-- 🎬 **视频帧提取** - 从视频中自动提取关键帧
+- 🎬 **视频帧提取** - 按指定时间间隔自动从视频中提取帧（单位：秒）
 - 📊 **PPT 生成** - 生成精美的 PowerPoint 演示文稿
 - ⏱️ **灵活配置** - 支持自定义帧提取间隔
 - 🚀 **高效处理** - 处理速度快，文件大小小
@@ -24,7 +24,6 @@
 ### 前置要求
 
 - Python 3.7+
-- FFmpeg（可选，用于高级视频处理）
 
 ### 安装步骤
 
@@ -40,81 +39,94 @@ pip install -r requirements.txt
 ### 基本使用
 
 ```bash
-# 最简单的方式 - 使用默认设置
-python3 video2ppt.py video.mp4
+# 默认：每秒提取一帧
+python3 main.py video.mp4
 
-# 指定输出文件和帧提取间隔
-python3 video2ppt.py video.mp4 -o output.pptx -i 10
+# 每 5 秒提取一帧
+python3 main.py video.mp4 -i 5 -o output.pptx
+
+# 每 10 秒提取一帧（快速模式）
+python3 main.py video.mp4 -i 10
 
 # 查看所有可用选项
-python3 video2ppt.py -h
+python3 main.py -h
 ```
 
 ## 📋 使用示例
 
-### 快速预览（处理最快）
+### 示例 1：快速预览（处理最快）
 ```bash
-python3 video2ppt.py video.mp4 -i 20
+python3 main.py video.mp4 -i 10
 ```
-- 间隔：每 20 帧
-- 结果：幻灯片少，文件小，处理快
+- 间隔：每 10 秒提取一帧
+- 结果：幻灯片少，文件小，处理快（约 7 秒）
 
-### 标准转换（推荐）⭐
+### 示例 2：标准转换（推荐）⭐
 ```bash
-python3 video2ppt.py video.mp4 -i 10 -o output.pptx
+python3 main.py video.mp4 -i 5 -o output.pptx
 ```
-- 间隔：每 10 帧
-- 结果：质量和文件大小均衡
+- 间隔：每 5 秒提取一帧
+- 结果：质量和文件大小均衡（约 14 秒）
 
-### 高质量转换（更多幻灯片）
+### 示例 3：高质量转换（详细）
 ```bash
-python3 video2ppt.py video.mp4 -i 5 -o output_hq.pptx
+python3 main.py video.mp4 -i 2 -o detailed.pptx
 ```
-- 间隔：每 5 帧
-- 结果：更多幻灯片，文件大，质量高
+- 间隔：每 2 秒提取一帧
+- 结果：更多幻灯片，文件大，质量高（约 28 秒）
+
+### 示例 4：默认模式（最大细节）
+```bash
+python3 main.py video.mp4 -i 1 -o maximum.pptx
+```
+- 间隔：每 1 秒提取一帧（默认）
+- 结果：最多帧数，最大文件大小（37 分钟视频约 55 秒）
 
 ## 📊 性能指标
 
-| 参数 | 处理时间 | 文件大小 | 幻灯片数 |
-|------|---------|--------|--------|
-| -i 10 | ~14.5 秒 | ~17 MB | ~225 张 |
-| -i 5 | ~28 秒 | ~33 MB | ~449 张 |
-| -i 1 | ~90+ 秒 | ~80+ MB | ~2237 张 |
+基于 76MB、37 分钟的 MP4 视频测试：
 
-*测试基于 76MB、37分钟的 MP4 视频*
+| 间隔（秒）| 帧率 | 处理时间 | 文件大小 | 幻灯片数 |
+|----------|------|--------|--------|--------|
+| -i 10 | 0.1 fps | ~7 秒 | ~9 MB | ~222 张 |
+| -i 5 | 0.2 fps | ~14 秒 | ~17 MB | ~444 张 |
+| -i 2 | 0.5 fps | ~28 秒 | ~33 MB | ~1110 张 |
+| -i 1 | 1.0 fps | ~55 秒 | ~80+ MB | ~2220 张 |
+
+**建议：** 使用 `-i 5` 以获得质量和文件大小的最佳平衡。
 
 ## 📖 文档
 
 ### 命令行选项
 
 ```
-用法: video2ppt.py [-h] [-o 输出] [-i 间隔] 输入视频
+用法: main.py [-h] [-o 输出] [-i 间隔] 视频
 
 位置参数:
-  输入视频          输入视频文件路径
+  视频              输入视频文件路径
 
 可选参数:
   -h, --help       显示帮助信息并退出
-  -o, --output 输出 输出 PowerPoint 文件路径（默认：output.pptx）
+  -o, --output 输出 输出 PowerPoint 文件路径（默认：video_name_output.pptx）
   -i, --interval 间隔
-                   帧提取间隔（默认：10）
+                   帧提取间隔（秒），默认为 1 秒
 ```
 
 ### 不同格式示例
 
 **MP4 视频**
 ```bash
-python3 video2ppt.py lecture.mp4 -o lecture.pptx
+python3 main.py lecture.mp4 -o lecture.pptx
 ```
 
 **AVI 视频**
 ```bash
-python3 video2ppt.py presentation.avi -o presentation.pptx
+python3 main.py presentation.avi -o presentation.pptx -i 3
 ```
 
 **MOV 视频（Mac）**
 ```bash
-python3 video2ppt.py video.mov -o output.pptx
+python3 main.py video.mov -o output.pptx -i 2
 ```
 
 ## 🛠️ 技术栈
@@ -129,23 +141,26 @@ python3 video2ppt.py video.mov -o output.pptx
 ### Q: 支持哪些视频格式？
 A: 支持 OpenCV 支持的大多数格式（MP4、AVI、MOV、MKV、FLV、WMV 等）
 
+### Q: 间隔参数如何工作？
+A: `-i` 参数指定帧之间的秒数。例如，`-i 5` 表示每 5 秒提取一帧。
+
 ### Q: 如何加快处理速度？
-A: 增大 `-i` 参数值。例如，`-i 20` 的速度大约是 `-i 5` 的 4 倍
+A: 增大 `-i` 参数值。例如，`-i 10` 的速度大约是 `-i 2` 的 5 倍，但提取的帧数会减少。
 
 ### Q: 如何减少文件大小？
-A: 使用较大的帧提取间隔。例如，`-i 10` 会比 `-i 5` 小 90%
+A: 使用较大的帧提取间隔。例如，`-i 10` 会比 `-i 1` 小 90%。
 
 ### Q: 能否自定义幻灯片布局？
-A: 目前工具使用标准布局。自定义布局将在未来版本支持。
+A: 目前工具使用标准的全幻灯片图像布局。自定义布局将在未来版本支持。
 
-### Q: 支持的最大视频时长？
+### Q: 支持的最大视频时长是多少？
 A: 没有严格限制，但处理时间取决于视频长度和间隔参数。
 
 ### Q: 需要网络连接吗？
 A: 不需要，所有处理都在本地进行。
 
-### Q: 能在 macOS/Linux 上运行吗？
-A: 可以，该工具跨平台支持 Windows、macOS 和 Linux。
+### Q: 能在 macOS/Linux/Windows 上运行吗？
+A: 可以，该工具跨平台支持所有系统。
 
 ## 🐛 故障排查
 
@@ -170,8 +185,8 @@ pip install python-pptx
 
 ### v1.0.0 (2025-11-03)
 - 初始版本发布
-- 基础视频转 PowerPoint 功能
-- 支持可配置间隔的帧提取
+- 支持时间间隔的帧提取
+- 支持可配置的帧提取间隔（单位：秒）
 - 支持多种视频格式
 
 ## 🤝 贡献

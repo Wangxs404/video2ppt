@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Video2PPT - 将视频转换为PowerPoint演示文稿
-从视频中提取关键帧，生成PPT
+Video2PPT - Convert videos to PowerPoint presentations
+Extract key frames from videos and generate PPT
 """
 
 import os
@@ -22,12 +22,12 @@ try:
     from pptx.enum.text import PP_ALIGN
     from pptx.dml.color import RGBColor
 except ImportError as e:
-    print(f"错误: 缺少必要的库 - {e}")
-    print("请运行: pip install -r requirements.txt")
+    print(f"Error: Missing required library - {e}")
+    print("Please run: pip install -r requirements.txt")
     sys.exit(1)
 
 
-# 配置日志
+# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
@@ -36,51 +36,51 @@ logger = logging.getLogger(__name__)
 
 
 class Video2PPT:
-    """视频转PPT转换器"""
+    """Video to PPT converter"""
     
     def __init__(self, video_path: str, output_path: str = None, fps_interval: int = 1):
         """
-        初始化转换器
+        Initialize converter
         
         Args:
-            video_path: 视频文件路径
-            output_path: 输出PPT文件路径
-            fps_interval: 每隔多少秒提取一帧
+            video_path: Path to input video file
+            output_path: Path to output PPT file
+            fps_interval: Extract one frame every N seconds
         """
         self.video_path = video_path
         self.fps_interval = fps_interval
-        self.frames: List[str] = []  # 存储帧路径
+        self.frames: List[str] = []  # Store frame paths
         self.frames_dir = None
         
         if not os.path.exists(video_path):
-            raise FileNotFoundError(f"视频文件不存在: {video_path}")
+            raise FileNotFoundError(f"Video file not found: {video_path}")
         
         if output_path is None:
             base_name = Path(video_path).stem
             output_path = f"{base_name}_output.pptx"
         
         self.output_path = output_path
-        logger.info(f"初始化转换器: {video_path} -> {output_path}")
+        logger.info(f"Initializing converter: {video_path} -> {output_path}")
     
     def extract_frames(self) -> None:
-        """从视频中提取关键帧"""
-        logger.info("开始提取视频帧...")
+        """Extract frames from video"""
+        logger.info("Starting frame extraction...")
         
-        # 创建临时目录存储帧
+        # Create temporary directory to store frames
         self.frames_dir = "temp_frames"
         os.makedirs(self.frames_dir, exist_ok=True)
         
-        # 打开视频文件
+        # Open video file
         cap = cv2.VideoCapture(self.video_path)
         
         if not cap.isOpened():
-            raise ValueError(f"无法打开视频文件: {self.video_path}")
+            raise ValueError(f"Unable to open video file: {self.video_path}")
         
         fps = cap.get(cv2.CAP_PROP_FPS)
         total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
         duration = total_frames / fps if fps > 0 else 0
         
-        logger.info(f"视频信息 - FPS: {fps:.2f}, 总帧数: {total_frames}, 时长: {duration:.2f}秒")
+        logger.info(f"Video info - FPS: {fps:.2f}, Total frames: {total_frames}, Duration: {duration:.2f}s")
         
         frame_interval = int(fps * self.fps_interval)
         frame_count = 0
@@ -92,7 +92,7 @@ class Video2PPT:
             if not ret:
                 break
             
-            # 按间隔提取帧
+            # Extract frames at specified intervals
             if frame_count % frame_interval == 0:
                 frame_path = os.path.join(self.frames_dir, f"frame_{extracted_count:04d}.jpg")
                 cv2.imwrite(frame_path, frame)
@@ -100,92 +100,92 @@ class Video2PPT:
                 extracted_count += 1
                 
                 if extracted_count % 10 == 0:
-                    logger.info(f"已提取 {extracted_count} 帧")
+                    logger.info(f"Extracted {extracted_count} frames")
             
             frame_count += 1
         
         cap.release()
-        logger.info(f"完成帧提取，共提取 {extracted_count} 帧")
+        logger.info(f"Frame extraction complete. Total frames extracted: {extracted_count}")
     
     def generate_ppt(self) -> None:
-        """生成PowerPoint演示文稿"""
-        logger.info("开始生成PowerPoint演示文稿...")
+        """Generate PowerPoint presentation"""
+        logger.info("Starting PowerPoint generation...")
         
         if not self.frames:
-            logger.error("没有可用的帧数据")
+            logger.error("No frame data available")
             return
         
-        # 创建演示文稿
+        # Create presentation
         prs = Presentation()
         prs.slide_width = Inches(10)
         prs.slide_height = Inches(7.5)
         
-        # 添加标题幻灯片
+        # Add title slide
         title_slide_layout = prs.slide_layouts[0]
         slide = prs.slides.add_slide(title_slide_layout)
         title = slide.shapes.title
         subtitle = slide.placeholders[1]
         
         title.text = "Video2PPT"
-        subtitle.text = f"视频转换时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n" \
-                       f"源文件: {os.path.basename(self.video_path)}"
+        subtitle.text = f"Conversion time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n" \
+                       f"Source file: {os.path.basename(self.video_path)}"
         
-        # 添加每一帧的幻灯片
-        blank_slide_layout = prs.slide_layouts[6]  # 空白布局
+        # Add frame slides
+        blank_slide_layout = prs.slide_layouts[6]  # Blank layout
         
         for idx, frame_path in enumerate(self.frames, 1):
-            logger.info(f"处理第 {idx}/{len(self.frames)} 张幻灯片...")
+            logger.info(f"Processing slide {idx}/{len(self.frames)}...")
             
             slide = prs.slides.add_slide(blank_slide_layout)
             
-            # 添加帧图像，占据整个幻灯片页面（边缘对齐）
+            # Add frame image, fill entire slide (edge-aligned)
             left = Inches(0)
             top = Inches(0)
-            width = Inches(10)     # 幻灯片宽度
-            height = Inches(7.5)   # 幻灯片高度
+            width = Inches(10)     # Slide width
+            height = Inches(7.5)   # Slide height
             pic = slide.shapes.add_picture(frame_path, left, top, width=width, height=height)
         
-        # 保存演示文稿
+        # Save presentation
         prs.save(self.output_path)
-        logger.info(f"PowerPoint已保存: {self.output_path}")
+        logger.info(f"PowerPoint saved: {self.output_path}")
     
     def cleanup(self) -> None:
-        """清理临时文件"""
+        """Clean up temporary files"""
         if self.frames_dir and os.path.exists(self.frames_dir):
             import shutil
             shutil.rmtree(self.frames_dir)
-            logger.info("临时文件已清理")
+            logger.info("Temporary files cleaned up")
     
     def convert(self) -> None:
-        """执行完整的转换流程"""
+        """Execute full conversion process"""
         try:
             self.extract_frames()
             self.generate_ppt()
-            logger.info("转换完成！")
+            logger.info("Conversion completed successfully!")
         except Exception as e:
-            logger.error(f"转换过程中出错: {e}")
+            logger.error(f"Error during conversion: {e}")
             raise
         finally:
             self.cleanup()
 
 
 def main():
-    """主函数"""
+    """Main function"""
     parser = argparse.ArgumentParser(
-        description='将视频文件转换为PowerPoint演示文稿',
+        description='Convert video files to PowerPoint presentations',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-示例:
-  python video2ppt.py input_video.mp4
-  python video2ppt.py input_video.mp4 -o output.pptx
-  python video2ppt.py input_video.mp4 -i 2  (每2秒提取一帧)
+Examples:
+  python main.py input_video.mp4
+  python main.py input_video.mp4 -o output.pptx
+  python main.py input_video.mp4 -i 2  (extract one frame every 2 seconds)
         """
     )
     
-    parser.add_argument('video', help='输入视频文件路径')
-    parser.add_argument('-o', '--output', help='输出PPT文件路径（默认为input_output.pptx）')
+    parser.add_argument('video', help='Path to input video file')
+    parser.add_argument('-o', '--output', help='Path to output PPT file (default: input_output.pptx)')
     parser.add_argument('-i', '--interval', type=int, default=1,
-                       help='帧提取间隔（秒），默认为1秒')
+                       help='Frame extraction interval in seconds (default: 1)')
     
     args = parser.parse_args()
     
@@ -193,7 +193,7 @@ def main():
         converter = Video2PPT(args.video, args.output, args.interval)
         converter.convert()
     except Exception as e:
-        logger.error(f"错误: {e}")
+        logger.error(f"Error: {e}")
         sys.exit(1)
 
 

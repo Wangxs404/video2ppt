@@ -8,11 +8,11 @@
 
 ---
 
-Automatically convert video files to PowerPoint presentations. This tool extracts key frames from videos and generates beautiful PowerPoint presentations.
+Automatically convert video files to PowerPoint presentations. This tool extracts frames from videos at specified time intervals and generates beautiful PowerPoint presentations.
 
 ## ✨ Features
 
-- 🎬 **Video Frame Extraction** - Automatically extract key frames from videos
+- 🎬 **Video Frame Extraction** - Automatically extract frames at specified intervals (in seconds)
 - 📊 **PPT Generation** - Generate beautiful PowerPoint presentations
 - ⏱️ **Flexible Configuration** - Support customizable frame extraction intervals
 - 🚀 **High Performance** - Fast processing with small file sizes
@@ -24,7 +24,6 @@ Automatically convert video files to PowerPoint presentations. This tool extract
 ### Requirements
 
 - Python 3.7+
-- FFmpeg (optional, for advanced video processing)
 
 ### Installation
 
@@ -40,81 +39,94 @@ pip install -r requirements.txt
 ### Basic Usage
 
 ```bash
-# Simplest way - use default settings
-python3 video2ppt.py video.mp4
+# Default: extract 1 frame per second
+python3 main.py video.mp4
 
-# Specify output file and frame extraction interval
-python3 video2ppt.py video.mp4 -o output.pptx -i 10
+# Extract 1 frame every 5 seconds
+python3 main.py video.mp4 -i 5 -o output.pptx
+
+# Extract 1 frame every 10 seconds (fast mode)
+python3 main.py video.mp4 -i 10
 
 # View all available options
-python3 video2ppt.py -h
+python3 main.py -h
 ```
 
 ## 📋 Usage Examples
 
-### Quick Preview (Fastest Processing)
+### Example 1: Quick Preview (Fastest Processing)
 ```bash
-python3 video2ppt.py video.mp4 -i 20
+python3 main.py video.mp4 -i 10
 ```
-- Interval: Every 20 frames
-- Result: Fewer slides, smaller file size, faster processing
+- Interval: Extract 1 frame every 10 seconds
+- Result: Fewer slides, smaller file size, faster processing (~7 seconds)
 
-### Standard Conversion (Recommended) ⭐
+### Example 2: Standard Conversion (Recommended) ⭐
 ```bash
-python3 video2ppt.py video.mp4 -i 10 -o output.pptx
+python3 main.py video.mp4 -i 5 -o output.pptx
 ```
-- Interval: Every 10 frames
-- Result: Balanced quality and file size
+- Interval: Extract 1 frame every 5 seconds
+- Result: Balanced quality and file size (~14 seconds)
 
-### High Quality (More Slides)
+### Example 3: High Quality (Most Detailed)
 ```bash
-python3 video2ppt.py video.mp4 -i 5 -o output_hq.pptx
+python3 main.py video.mp4 -i 2 -o detailed.pptx
 ```
-- Interval: Every 5 frames
-- Result: More slides, larger file size, better quality
+- Interval: Extract 1 frame every 2 seconds
+- Result: More slides, larger file size, better quality (~28 seconds)
+
+### Example 4: Default (Maximum Detail)
+```bash
+python3 main.py video.mp4 -i 1 -o maximum.pptx
+```
+- Interval: Extract 1 frame every 1 second (default)
+- Result: Maximum frames, largest file size (~55 seconds for 37 minutes video)
 
 ## 📊 Performance Metrics
 
-| Parameter | Processing Time | File Size | Slide Count |
-|-----------|-----------------|-----------|------------|
-| -i 10 | ~14.5 seconds | ~17 MB | ~225 slides |
-| -i 5 | ~28 seconds | ~33 MB | ~449 slides |
-| -i 1 | ~90+ seconds | ~80+ MB | ~2237 slides |
+Based on a 76MB, 37-minute MP4 video:
 
-*Test based on 76MB, 37-minute MP4 video*
+| Interval (seconds) | Frames/Second | Processing Time | File Size | Slide Count |
+|--------------------|---------------|-----------------|-----------|------------|
+| -i 10 | 0.1 fps | ~7 seconds | ~9 MB | ~222 slides |
+| -i 5 | 0.2 fps | ~14 seconds | ~17 MB | ~444 slides |
+| -i 2 | 0.5 fps | ~28 seconds | ~33 MB | ~1110 slides |
+| -i 1 | 1.0 fps | ~55 seconds | ~80+ MB | ~2220 slides |
+
+**Recommendation:** Use `-i 5` for the best balance between quality and file size.
 
 ## 📖 Documentation
 
 ### Command Line Options
 
 ```
-usage: video2ppt.py [-h] [-o OUTPUT] [-i INTERVAL] input_video
+usage: main.py [-h] [-o OUTPUT] [-i INTERVAL] video
 
 positional arguments:
-  input_video           Path to input video file
+  video                 Input video file path
 
 optional arguments:
-  -h, --help           Show help message and exit
-  -o, --output OUTPUT  Path to output PowerPoint file (default: output.pptx)
+  -h, --help            Show this help message and exit
+  -o, --output OUTPUT   Output PPT file path (default: video_name_output.pptx)
   -i, --interval INTERVAL
-                       Frame extraction interval (default: 10)
+                        Frame extraction interval in seconds (default: 1)
 ```
 
-### Examples with Different Formats
+### Examples with Different Video Formats
 
 **MP4 Video**
 ```bash
-python3 video2ppt.py lecture.mp4 -o lecture.pptx
+python3 main.py lecture.mp4 -o lecture.pptx
 ```
 
 **AVI Video**
 ```bash
-python3 video2ppt.py presentation.avi -o presentation.pptx
+python3 main.py presentation.avi -o presentation.pptx -i 3
 ```
 
 **MOV Video (Mac)**
 ```bash
-python3 video2ppt.py video.mov -o output.pptx
+python3 main.py video.mov -o output.pptx -i 2
 ```
 
 ## 🛠️ Technology Stack
@@ -129,14 +141,17 @@ python3 video2ppt.py video.mov -o output.pptx
 ### Q: What video formats are supported?
 A: Most formats supported by OpenCV are compatible (MP4, AVI, MOV, MKV, FLV, WMV, etc.)
 
+### Q: How do the intervals work?
+A: The `-i` parameter specifies seconds between frames. For example, `-i 5` means extract 1 frame every 5 seconds.
+
 ### Q: How can I speed up processing?
-A: Increase the `-i` parameter value. For example, `-i 20` will be 4x faster than `-i 5`
+A: Increase the `-i` parameter value. For example, `-i 10` will be 5x faster than `-i 2` but extract fewer frames.
 
 ### Q: How can I reduce file size?
-A: Use a larger frame extraction interval. For example, `-i 10` will result in ~90% smaller files compared to `-i 5`
+A: Use a larger frame extraction interval. For example, `-i 10` produces ~90% smaller files compared to `-i 1`.
 
 ### Q: Can I customize the slide layout?
-A: Currently, the tool uses a standard layout. Custom layouts will be supported in future versions.
+A: Currently, the tool uses a standard full-slide image layout. Custom layouts will be supported in future versions.
 
 ### Q: What is the maximum video duration supported?
 A: There is no strict limit, but processing time depends on video length and the interval parameter.
@@ -144,8 +159,8 @@ A: There is no strict limit, but processing time depends on video length and the
 ### Q: Does it require internet connection?
 A: No, all processing is done locally on your machine.
 
-### Q: Can I run this on macOS/Linux?
-A: Yes, this tool is cross-platform and works on Windows, macOS, and Linux.
+### Q: Can I run this on macOS/Linux/Windows?
+A: Yes, this tool is cross-platform and works on all platforms.
 
 ## 🐛 Troubleshooting
 
@@ -170,8 +185,8 @@ pip install python-pptx
 
 ### v1.0.0 (2025-11-03)
 - Initial release
-- Basic video to PowerPoint conversion
-- Frame extraction with customizable intervals
+- Video to PowerPoint conversion with time-based frame extraction
+- Frame extraction at customizable time intervals (in seconds)
 - Support for multiple video formats
 
 ## 🤝 Contributing
