@@ -1,4 +1,4 @@
-<img src="assets/logo.svg" alt="Video2PPT" width="200">
+<img src="assets/logo.svg" alt="Video2PPT" width="50">
 
 # Video2PPT
 
