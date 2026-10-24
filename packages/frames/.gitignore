@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+frames/
+temp_frames/
+*.mp4
+*.avi
+*.mov
+*.mkv

@@ -1,7 +1,7 @@
 # 🎬 Video2PPT - Video to PowerPoint Conversion Tool
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.7+](https://img.shields.io/badge/Python-3.7%2B-blue)](https://www.python.org/downloads/)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue)](https://www.python.org/downloads/)
 [![Open Source](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)](https://github.com/wangxs404/video2ppt)
 
 🚀 **[QuickStart Guide](https://video2ppt.com)** | 🏠 **[Back to Main](../README.md)** | 💬 **[GitHub Issues](https://github.com/wangxs404/video2ppt/issues)**
@@ -23,7 +23,7 @@ Automatically convert video files to PowerPoint presentations. This tool extract
 
 ### Requirements
 
-- Python 3.7+
+- Python 3.11+
 
 ### Installation
 
