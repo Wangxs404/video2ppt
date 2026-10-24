@@ -1,6 +1,4 @@
-<img src="assets/logo.svg" alt="Video2PPT" width="50">
-
-# Video2PPT
+# <img src="assets/logo.svg" alt="Video2PPT" width="50"> Video2PPT
 
 Developer tools for video frame extraction and scene comparison.
 
