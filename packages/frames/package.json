@@ -1,0 +1,48 @@
+{
+  "name": "@video2ppt/frames",
+  "version": "0.1.0",
+  "description": "Extract frames from videos and compare scene differences - Video2PPT Developer Tools",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "video2ppt-frames": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "video",
+    "frames",
+    "ffmpeg",
+    "video-processing",
+    "scene-detection",
+    "video2ppt"
+  ],
+  "author": "Video2PPT",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/wangxs404/video2ppt.git",
+    "directory": "packages/frames"
+  },
+  "homepage": "https://video2ppt.com",
+  "dependencies": {
+    "fluent-ffmpeg": "^2.1.2",
+    "pixelmatch": "^5.3.0",
+    "pngjs": "^7.0.0",
+    "sharp": "^0.33.0",
+    "commander": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/fluent-ffmpeg": "^2.1.24",
+    "@types/node": "^20.10.0",
+    "@types/pixelmatch": "^5.2.6",
+    "@types/pngjs": "^6.0.4",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
