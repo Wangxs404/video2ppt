@@ -1,19 +1,19 @@
 # @video2ppt/frames
 
-🎬 **Video2PPT Developer Tools** - Extract frames from videos and compare scene differences
+Video frame extraction and scene comparison tools for developers.
 
 [![npm version](https://img.shields.io/npm/v/@video2ppt/frames.svg)](https://www.npmjs.com/package/@video2ppt/frames)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ## Quick Start
 
-### Extract frames from a video
+Extract frames from a video:
 
 ```bash
 npx @video2ppt/frames extract video.mp4 --interval 5 --output ./frames
 ```
 
-### Compare two frames
+Compare two frames:
 
 ```bash
 npx @video2ppt/frames compare frame1.jpg frame2.jpg
@@ -48,7 +48,7 @@ Options:
   -m, --max <frames>        Maximum number of frames to extract
 ```
 
-**Example:**
+Example:
 ```bash
 npx @video2ppt/frames extract video.mp4 -i 5 -o ./my-frames
 ```
@@ -63,7 +63,7 @@ Options:
   -w, --width <width>         Resize width for comparison (default: 640)
 ```
 
-**Example:**
+Example:
 ```bash
 npx @video2ppt/frames compare frame1.jpg frame2.jpg
 ```
@@ -77,7 +77,7 @@ Options:
   -t, --threshold <threshold>  Scene change threshold 0-100 (default: 30)
 ```
 
-**Example:**
+Example:
 ```bash
 npx @video2ppt/frames detect-scenes ./frames -t 35
 ```
@@ -165,13 +165,9 @@ Detect scene changes in a sequence of frames.
 
 **Returns:** `Promise<number[]>` - Array of frame indices where scenes change
 
-## 🚀 Full Product Experience
+## Full Product
 
-This open-source tool provides frame extraction and comparison for developers.
-
-**For the complete Video2PPT experience** including automatic PowerPoint generation, smart slide layouts, and web-based conversion, visit:
-
-👉 **[https://video2ppt.com](https://video2ppt.com)**
+This package provides frame extraction and comparison tools. The complete video-to-presentation conversion product, including automatic PowerPoint generation and smart layouts, is available at [video2ppt.com](https://video2ppt.com).
 
 ## License
 

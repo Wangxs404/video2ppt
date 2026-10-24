@@ -1,105 +1,88 @@
-# 🎬 Video2PPT - Video to PowerPoint Conversion Tool
+# Video2PPT
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue)](https://www.python.org/downloads/)
-[![Open Source](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)](https://github.com/wangxs404/video2ppt)
+Developer tools for video frame extraction and scene comparison.
 
-🚀 **[QuickStart Guide](https://video2ppt.com)** | 🏠 **[Back to Main](../README.md)** | 💬 **[GitHub Issues](https://github.com/wangxs404/video2ppt/issues)**
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+
+[Back to Main](../README.md)
 
 ---
 
-Automatically convert video files to PowerPoint presentations. This tool extracts frames from videos at specified time intervals and generates beautiful PowerPoint presentations.
+## Overview
 
-## ✨ Features
+This tool extracts frames from video files at specified time intervals and generates PowerPoint presentations. All processing runs locally.
 
-- 🎬 **Video Frame Extraction** - Automatically extract frames at specified intervals (in seconds)
-- 📊 **PPT Generation** - Generate beautiful PowerPoint presentations
-- ⏱️ **Flexible Configuration** - Support customizable frame extraction intervals
-- 🚀 **High Performance** - Fast processing with small file sizes
-- 🖼️ **Professional Layout** - Images fill the entire slide
-- 📋 **Auto Cleanup** - Automatic temporary file cleanup
-
-## 🚀 Quick Start
+## Quick Start
 
 ### Requirements
 
-- Python 3.11+
+- Python 3.11 or later
 
 ### Installation
 
 ```bash
-# Clone the repository
 git clone https://github.com/wangxs404/video2ppt.git
 cd video2ppt
-
-# Install dependencies
 pip install -r requirements.txt
 ```
 
 ### Basic Usage
 
 ```bash
-# Default: extract 1 frame per second
+# Extract 1 frame per second (default)
 python3 main.py video.mp4
 
 # Extract 1 frame every 5 seconds
 python3 main.py video.mp4 -i 5 -o output.pptx
 
-# Extract 1 frame every 10 seconds (fast mode)
+# Extract 1 frame every 10 seconds (faster processing)
 python3 main.py video.mp4 -i 10
 
-# View all available options
+# View all options
 python3 main.py -h
 ```
 
-> **📚 For more detailed guides and tips, visit [video2ppt.com](https://video2ppt.com)**
+## Usage Examples
 
-## 📋 Usage Examples
-
-### Example 1: Quick Preview (Fastest Processing)
+### Fast Processing
 ```bash
 python3 main.py video.mp4 -i 10
 ```
-- Interval: Extract 1 frame every 10 seconds
-- Result: Fewer slides, smaller file size, faster processing (~7 seconds)
+Extracts 1 frame every 10 seconds. Fastest processing with fewer slides.
 
-### Example 2: Standard Conversion (Recommended) ⭐
+### Balanced (Recommended)
 ```bash
 python3 main.py video.mp4 -i 5 -o output.pptx
 ```
-- Interval: Extract 1 frame every 5 seconds
-- Result: Balanced quality and file size (~14 seconds)
+Extracts 1 frame every 5 seconds. Good balance between detail and file size.
 
-### Example 3: High Quality (Most Detailed)
+### High Detail
 ```bash
 python3 main.py video.mp4 -i 2 -o detailed.pptx
 ```
-- Interval: Extract 1 frame every 2 seconds
-- Result: More slides, larger file size, better quality (~28 seconds)
+Extracts 1 frame every 2 seconds. More slides with greater detail.
 
-### Example 4: Default (Maximum Detail)
+### Maximum Detail
 ```bash
 python3 main.py video.mp4 -i 1 -o maximum.pptx
 ```
-- Interval: Extract 1 frame every 1 second (default)
-- Result: Maximum frames, largest file size (~55 seconds for 37 minutes video)
+Extracts 1 frame per second. Maximum frames with largest file size.
 
-## 📊 Performance Metrics
+## Performance Metrics
 
-Based on a 76MB, 37-minute MP4 video:
+Based on 76MB, 37-minute MP4 video:
 
-| Interval (seconds) | Frames/Second | Processing Time | File Size | Slide Count |
-|--------------------|---------------|-----------------|-----------|------------|
-| -i 10 | 0.1 fps | ~7 seconds | ~9 MB | ~222 slides |
-| -i 5 | 0.2 fps | ~14 seconds | ~17 MB | ~444 slides |
-| -i 2 | 0.5 fps | ~28 seconds | ~33 MB | ~1110 slides |
-| -i 1 | 1.0 fps | ~55 seconds | ~80+ MB | ~2220 slides |
+| Interval | Frames/Second | Processing Time | File Size | Slide Count |
+|----------|---------------|-----------------|-----------|-------------|
+| -i 10    | 0.1 fps       | ~7 seconds      | ~9 MB     | ~222 slides |
+| -i 5     | 0.2 fps       | ~14 seconds     | ~17 MB    | ~444 slides |
+| -i 2     | 0.5 fps       | ~28 seconds     | ~33 MB    | ~1110 slides|
+| -i 1     | 1.0 fps       | ~55 seconds     | ~80 MB    | ~2220 slides|
 
-**Recommendation:** Use `-i 5` for the best balance between quality and file size.
+Recommended: `-i 5` for typical use.
 
-## 📖 Documentation
-
-### Command Line Options
+## Command Reference
 
 ```
 usage: main.py [-h] [-o OUTPUT] [-i INTERVAL] video
@@ -108,106 +91,77 @@ positional arguments:
   video                 Input video file path
 
 optional arguments:
-  -h, --help            Show this help message and exit
-  -o, --output OUTPUT   Output PPT file path (default: video_name_output.pptx)
+  -h, --help            Show help message and exit
+  -o, --output OUTPUT   Output PowerPoint file path (default: video_name_output.pptx)
   -i, --interval INTERVAL
                         Frame extraction interval in seconds (default: 1)
 ```
 
-### Examples with Different Video Formats
+### Supported Video Formats
 
-**MP4 Video**
-```bash
-python3 main.py lecture.mp4 -o lecture.pptx
-```
+Most formats supported by OpenCV work with this tool:
+- MP4
+- AVI
+- MOV
+- MKV
+- FLV
+- WMV
 
-**AVI Video**
-```bash
-python3 main.py presentation.avi -o presentation.pptx -i 3
-```
+## Technology Stack
 
-**MOV Video (Mac)**
-```bash
-python3 main.py video.mov -o output.pptx -i 2
-```
-
-## 🛠️ Technology Stack
-
-- **OpenCV** - Video processing and frame extraction
+- **OpenCV** - video frame extraction
 - **python-pptx** - PowerPoint file generation
-- **Pillow** - Image processing and resizing
-- **NumPy** - Numerical computations
+- **Pillow** - image processing
+- **NumPy** - numerical operations
 
-## 💡 FAQ
+## FAQ
 
-### Q: What video formats are supported?
-A: Most formats supported by OpenCV are compatible (MP4, AVI, MOV, MKV, FLV, WMV, etc.)
+**What interval should I use?**  
+Use `-i 5` for most videos. Increase the interval for faster processing and smaller files.
 
-### Q: How do the intervals work?
-A: The `-i` parameter specifies seconds between frames. For example, `-i 5` means extract 1 frame every 5 seconds.
+**How do intervals work?**  
+The `-i` parameter specifies seconds between frames. `-i 5` extracts 1 frame every 5 seconds.
 
-### Q: How can I speed up processing?
-A: Increase the `-i` parameter value. For example, `-i 10` will be 5x faster than `-i 2` but extract fewer frames.
+**How can I reduce file size?**  
+Increase the interval value. `-i 10` produces significantly smaller files than `-i 1`.
 
-### Q: How can I reduce file size?
-A: Use a larger frame extraction interval. For example, `-i 10` produces ~90% smaller files compared to `-i 1`.
+**Does this require internet?**  
+No. All processing happens locally on your machine.
 
-### Q: Can I customize the slide layout?
-A: Currently, the tool uses a standard full-slide image layout. Custom layouts will be supported in future versions.
+**What platforms are supported?**  
+Windows, macOS, and Linux.
 
-### Q: What is the maximum video duration supported?
-A: There is no strict limit, but processing time depends on video length and the interval parameter.
+## Troubleshooting
 
-### Q: Does it require internet connection?
-A: No, all processing is done locally on your machine.
-
-### Q: Can I run this on macOS/Linux/Windows?
-A: Yes, this tool is cross-platform and works on all platforms.
-
-## 🐛 Troubleshooting
-
-### Issue: "OpenCV not found" error
+**"OpenCV not found" error**
 ```bash
-# Solution: Install OpenCV
 pip install opencv-python
 ```
 
-### Issue: "No module named 'pptx'" error
+**"No module named 'pptx'" error**
 ```bash
-# Solution: Install python-pptx
 pip install python-pptx
 ```
 
-### Issue: Video file not recognized
-- Ensure the video file path is correct
-- Check if the video format is supported
-- Try with a different video file
+**Video file not recognized**
+- Verify the video file path is correct
+- Check that the video format is supported
+- Test with a different video file
 
-## 📝 Changelog
+## Full Product
 
-### v1.0.0 (2025-11-03)
-- Initial release
-- Video to PowerPoint conversion with time-based frame extraction
-- Frame extraction at customizable time intervals (in seconds)
-- Support for multiple video formats
+This repository contains frame extraction tools. The complete video-to-presentation conversion product is available at [video2ppt.com](https://video2ppt.com).
 
-## 🤝 Contributing
+## License
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+MIT License. See [LICENSE](../LICENSE) for details.
 
-## 📜 License
+## Contributing
 
-This project is licensed under the MIT License - see the [LICENSE](../LICENSE) file for details.
+Pull requests are welcome. For major changes, open an issue first to discuss proposed changes.
 
-## 🔗 Links
+## Links
 
 - [GitHub Repository](https://github.com/wangxs404/video2ppt)
-- [QuickStart Guide](https://video2ppt.com)
-- [GitHub Issues](https://github.com/wangxs404/video2ppt/issues)
-- [MIT License](https://opensource.org/licenses/MIT)
-
----
-
-**For more tutorials and guides, visit [video2ppt.com](https://video2ppt.com)**
-
-**Last Updated:** 2025-11-03
+- [Full Product](https://video2ppt.com)
+- [Report Issues](https://github.com/wangxs404/video2ppt/issues)
