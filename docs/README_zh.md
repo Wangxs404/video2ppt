@@ -1,7 +1,7 @@
 # 🎬 Video2PPT - 视频转PowerPoint工具
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.7+](https://img.shields.io/badge/Python-3.7%2B-blue)](https://www.python.org/downloads/)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11%2B-blue)](https://www.python.org/downloads/)
 [![Open Source](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)](https://github.com/wangxs404/video2ppt)
 
 🚀 **[快速开始指南](https://video2ppt.com)** | 🏠 **[返回主文档](../README.md)** | 💬 **[GitHub Issues](https://github.com/wangxs404/video2ppt/issues)**
@@ -23,7 +23,7 @@
 
 ### 前置要求
 
-- Python 3.7+
+- Python 3.11+
 
 ### 安装步骤
 
