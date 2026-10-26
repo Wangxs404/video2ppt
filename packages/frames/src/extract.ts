@@ -37,7 +37,7 @@ export async function extractFrames(
 
   await fs.mkdir(outputDir, { recursive: true });
 
-  return new Promise((resolve, reject) => {
+  return new Promise<ExtractResult>((resolve, reject) => {
     const frames: string[] = [];
     let frameCount = 0;
     let videoInfo: { duration: number; fps: number } | null = null;
